@@ -342,7 +342,7 @@
         <label class="field" id="fxInvestTargetWrap" style="display:none;"><span>対象の投資</span><select id="fxInvestTarget"></select></label>
         <label class="field" id="fxAmountWrap"><span id="fxAmountLabel">金額（月額・円）</span><input type="text" inputmode="numeric" id="fxAmount" placeholder="例）85000"></label>
         <label class="field"><span>口座（任意・選ぶとその月が来たら資産の金額を自動で増減）</span><select id="fxInvestAccount"></select></label>
-        <label class="field" id="fxOwnerWrap"><span>大カテゴリ（誰の分）</span><select id="fxOwner"><option value="共通">家族（共通・割り勘）</option><option value="夫">夫</option><option value="妻">妻</option></select></label>
+        <label class="field" id="fxOwnerWrap"><span id="fxOwnerLabel">大カテゴリ（誰の分）</span><select id="fxOwner"><option value="共通">家族（共通・割り勘）</option><option value="夫">夫</option><option value="妻">妻</option></select></label>
         <label class="field" id="fxPayerWrap"><span>支払う人</span><select id="fxPayer"><option value="夫">夫</option><option value="妻">妻</option></select></label>
         <p class="stat-sub" id="fxInvestNote" style="display:none;">毎月、自動でこの金額が対象の投資の元本に足され、家計簿の「積立・投資」欄にも記録されます（支出としては扱いません）。</p>
         <label class="field" id="fxPrivWrap" style="display:none; flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="fxPriv"><span style="margin:0;">🔒 配偶者に見せない（自分だけ）</span></label>
@@ -2113,7 +2113,7 @@
   function refreshFxInvestUI(){
     var isInvest = fxType.value === "invest";
     document.getElementById("fxCategoryWrap").style.display = isInvest ? "none" : "grid";
-    document.getElementById("fxOwnerWrap").style.display = isInvest ? "none" : "block";
+    document.getElementById("fxOwnerWrap").style.display = "block";
     document.getElementById("fxPayerWrap").style.display = (isInvest || fxType.value !== "expense") ? "none" : "block";
     document.getElementById("fxFrequencyWrap").style.display = isInvest ? "none" : "grid";
     document.getElementById("fxInvestTargetWrap").style.display = isInvest ? "block" : "none";
@@ -2131,6 +2131,7 @@
         : '<option value="">資産タブで投資を登録してください</option>';
       document.getElementById("fxAmountLabel").textContent = "毎月の積立額（円）";
     }
+    document.getElementById("fxOwnerLabel").textContent = isInvest ? "誰が投資する（家族・夫・妻）" : "大カテゴリ（誰の分）";
   }
   function refreshFxSubcategoryOptions(){
     var cats = catsFor(fxType.value, splitLabel(document.getElementById("fxOwner").value));
@@ -2165,7 +2166,8 @@
       var targetAsset = data.assets.find(function(a){ return a.id === targetId; });
       addFixedCost({
         name: name, type: "invest", amount: amount, frequency: "毎月",
-        targetAssetId: targetId, accountId: accountVal, startMonth: currentMonthKey()
+        targetAssetId: targetId, accountId: accountVal, startMonth: currentMonthKey(),
+        owner: document.getElementById("fxOwner").value
       }, { private: !!(targetAsset && targetAsset._priv) || document.getElementById("fxPriv").checked });
     } else {
       var day = Number(document.getElementById("fxDay").value);
@@ -2197,6 +2199,7 @@
       + '<label class="field"><span>名称</span><input type="text" class="ff-name" value="'+(f.name||"").replace(/"/g,"&quot;")+'"></label>'
       + '<label class="field"><span>金額（円）</span><input type="text" inputmode="numeric" class="ff-amount" value="'+(f.amount||0)+'"></label>'
       + dayField
+      + '<label class="field"><span>'+(f.type==="invest"?'誰が投資する':'大カテゴリ（誰の分）')+'</span><select class="ff-owner">'+splitOptionsHtml(f.owner||"共通")+'</select></label>'
       + '<label class="field"><span>口座（任意）</span><select class="ff-account">'+accountOptions+'</select></label>'
       + '<div class="ef-btns"><button class="primary ff-save">保存</button><button class="ghost ff-cancel">キャンセル</button></div>'
       + '</div>';
@@ -2207,7 +2210,7 @@
     editRow.querySelector(".ff-save").addEventListener("click", function(){
       var amt = parseAmount(editRow.querySelector(".ff-amount").value);
       if (!isFinite(amt) || amt <= 0) { showToast("金額を数字で入力してください"); return; }
-      var patch = { name: editRow.querySelector(".ff-name").value.trim() || f.name, amount: amt, accountId: editRow.querySelector(".ff-account").value || "" };
+      var patch = { name: editRow.querySelector(".ff-name").value.trim() || f.name, amount: amt, accountId: editRow.querySelector(".ff-account").value || "", owner: editRow.querySelector(".ff-owner").value };
       var dayEl = editRow.querySelector(".ff-day");
       if (dayEl) { var d = Number(dayEl.value); patch.day = (d>=1 && d<=31) ? d : 0; }
       editingFixedId = null;
@@ -2232,10 +2235,10 @@
         var detail;
         if (f.type === "invest") {
           var asset = data.assets.find(function(a){ return a.id === f.targetAssetId; });
-          detail = "積立 → " + (asset ? asset.name : "（削除された資産）");
+          detail = "積立 → " + (asset ? asset.name : "（削除された資産）") + ' ・ ' + splitLabel(f.owner);
         } else {
           var subTxt = f.subcategory ? ("・"+f.subcategory) : "";
-          detail = f.category + subTxt + ' ・ ' + f.owner + (f.payer?(' ・ 支払:'+f.payer):'');
+          detail = f.category + subTxt + ' ・ ' + splitLabel(f.owner) + (f.payer?(' ・ 支払:'+f.payer):'');
         }
         var accName = "";
         if (f.accountId) { var acc = data.assets.find(function(a){ return a.id === f.accountId; }); accName = acc ? (' ・ 口座:'+acc.name) : ''; }
