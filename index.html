@@ -714,11 +714,13 @@
   var provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
   document.addEventListener("DOMContentLoaded", function(){
+    if (/Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent)) { setErr("LINEなどのアプリ内の画面だとログインが続きません。右下の「…」や共有マークから「Safariで開く」を選んでください。"); }
     document.getElementById("loginBtn").addEventListener("click", function(){
       setErr("");
       auth.signInWithPopup(provider).catch(function(e){
         if (e && (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment" || e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request")) {
           if (e.code === "auth/popup-closed-by-user") { setErr("ログインが中断されました。もう一度お試しください。"); return; }
+          if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) { setErr("ログイン画面が開けませんでした。Safariの「ポップアップブロック」を切るか、LINEなどのアプリ内の画面ではなく、Safariで開き直してください。"); return; }
           auth.signInWithRedirect(provider);
         } else { setErr("ログインできませんでした：" + (e && e.message ? e.message : e.code)); }
       });
@@ -3067,7 +3069,7 @@
         if (!imported.ledger || !imported.assets) throw new Error("invalid");
         if (synced) {
           // id を保ったまま取り込む（固定費・資産とのひも付きが壊れないように）。同じidがあれば上書き。
-          function putAll(colName, arr){ (arr||[]).forEach(function(x){ var c=Object.assign({},x); var id=c.id; delete c.id; delete c._priv; var ref = id ? db.collection(colName).doc(String(id)) : null; (ref ? ref.set(c) : db.collection(colName).add(c)).catch(dbErr); }); }
+          function putAll(colName, arr){ (arr||[]).forEach(function(x){ var c=Object.assign({},x); var id=c.id; delete c.id; delete c._priv; var priv = !!x._priv && canPrivate(); var col = priv ? privateDoc().collection(colName) : db.collection(colName); var ref = id ? col.doc(String(id)) : null; (ref ? ref.set(c) : col.add(c)).catch(dbErr); }); }
           putAll("ledger", imported.ledger); putAll("assets", imported.assets); putAll("liabilities", imported.liabilities); putAll("fixedCosts", imported.fixedCosts);
           (imported.assetHistory||[]).forEach(function(h){ if (!h.date) return; var c=Object.assign({},h); delete c.id; db.collection("assetHistory").doc(h.date).set(c).catch(dbErr); });
           if (imported.settings) { var st2 = clone(imported.settings); db.doc("settings/main").set(st2, { merge: true }).catch(dbErr); }
