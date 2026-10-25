@@ -168,6 +168,20 @@
 
   .kp-rc { display:flex; align-items:center; gap:10px; margin:8px 0 4px; flex-wrap:wrap; }
   .kp-rcbtn { display:inline-block; background:#fff; border:2px solid var(--line); border-radius:999px; padding:9px 14px; font-weight:700; font-size:13px; cursor:pointer; color:var(--ink,#2B2433); }
+
+  .home-card { background:#fff; border:2px solid var(--line); border-radius:var(--radius,18px); padding:14px; margin-bottom:12px; }
+  .home-card h3 { margin:0 0 8px; font-size:14px; }
+  .hm-row { margin:8px 0; font-size:13px; }
+  .hm-top { display:flex; justify-content:space-between; gap:8px; font-weight:700; }
+  .hm-bar { height:10px; background:#F0E9DE; border-radius:999px; overflow:hidden; margin:5px 0 3px; }
+  .hm-fill { height:100%; background:var(--teal,#12B3A0); border-radius:999px; }
+  .hm-fill.warn { background:#F5A524; } .hm-fill.over { background:#E8503F; }
+  .hm-sub { color:var(--sub); font-size:12px; }
+  .kp-cats { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 10px; }
+  .kp-cats .kp-pill { padding:8px 12px; }
+  .goal-row { margin:12px 0; }
+  .bd-grid { display:grid; grid-template-columns: 1fr 120px; gap:6px 10px; align-items:center; }
+  .bd-grid input { width:100%; }
   .scope-bar { display: flex; gap: 6px; margin-bottom: 14px; }
   .scope-bar button { flex: 1; background: var(--card); border: 2px solid var(--line); color: var(--sub); font-family: var(--font-display); font-weight: 700; font-size: 13px; padding: 9px 2px; border-radius: 999px; cursor: pointer; white-space: nowrap; min-width: 0; }
   #lgSubBar button { font-size: 12px; letter-spacing: -0.5px; padding-left: 0; padding-right: 0; }
@@ -306,6 +320,7 @@
     <section class="pane active" id="pane-ledger">
       <h2 class="pane-title">家計簿</h2>
       <div id="noticeBar"></div>
+      <div class="home-card" id="homeCard"></div>
       <p class="pane-note">「カレンダー」で支払った日を確認、「入力」で電卓のように記録、「一覧」でカテゴリごとの確認、「グラフ」で内訳、「固定費」で毎月の固定費を登録できます。</p>
       <div class="scope-bar" id="lgSubBar"><button data-lgsub="calendar">カレンダー</button><button data-lgsub="input">入力</button><button data-lgsub="list">一覧</button><button data-lgsub="chart">グラフ</button><button data-lgsub="fixed">固定費</button></div>
       <div class="card accent-teal" data-lgsub-pane="calendar"><div id="calBody"></div></div>
@@ -433,7 +448,7 @@
         <button data-scope="全体" class="active">全体</button>
         <button data-scope="夫">夫</button>
         <button data-scope="妻">妻</button>
-        <button data-scope="共通">共通</button>
+        <button data-scope="共通">家族</button>
       </div>
 
       <div class="card accent-teal">
@@ -531,6 +546,21 @@
         <button class="primary" id="asAdd">資産を追加</button>
       </div>
 
+      <div class="card accent-lav">
+        <h3>🎯 貯金・資産の目標</h3>
+        <div id="goalList"><p class="empty">まだ目標がありません</p></div>
+        <div class="grid-2" style="margin-top:10px;">
+          <label class="field"><span>目標の名前</span><input type="text" id="goalName" placeholder="例）頭金 500万"></label>
+          <label class="field"><span>目標額（円）</span><input type="number" id="goalAmt" inputmode="numeric" placeholder="5000000"></label>
+        </div>
+        <div class="grid-2">
+          <label class="field"><span>対象</span><select id="goalScope"><option value="全体">夫婦合計</option><option value="夫">夫</option><option value="妻">妻</option><option value="共通">家族</option></select></label>
+          <label class="field"><span>数える資産</span><select id="goalKind"><option value="invest_cash">現金・預金＋投資</option><option value="net">純資産</option><option value="invest">投資のみ</option></select></label>
+        </div>
+        <label class="field"><span>達成したい日（任意）</span><input type="date" id="goalDate"></label>
+        <button class="primary" id="goalAdd">目標を追加</button>
+      </div>
+
       <div class="card"><h3>資産一覧</h3><div id="assetsList"><p class="empty">まだ資産が登録されていません</p></div></div>
 
       <div class="card accent-coral">
@@ -609,6 +639,9 @@
       </div>
 
       <div class="card">
+        <label class="field" style="display:flex; flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="insLivAuto" checked><span style="margin:0;">生活費・保障期間を家計簿とプロフィールから自動で計算する</span></label>
+        <label class="field" id="insRatioWrap"><span>遺族の生活費＝今の生活費の何％か</span><input type="number" id="insLivRatio" value="70" min="10" max="150"></label>
+        <p class="stat-sub" id="insLivInfo" style="margin:-4px 0 10px;"></p>
         <label class="field"><span>遺族の生活費（月額・円）</span><input type="number" id="insLiving" value="250000" inputmode="numeric"></label>
         <label class="field"><span>保障が必要な期間（末子独立までなど・年）</span><input type="number" id="insYears" value="20"></label>
         <label class="field"><span>遺族年金など公的保障（月額・円）</span><input type="number" id="insPension" value="100000" inputmode="numeric"></label>
@@ -616,7 +649,7 @@
         <label class="field" style="display:flex; flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="insAutoSync" checked><span style="margin:0;">資産タブの金額を自動で反映する</span></label>
         <div class="grid-2" id="insSyncOpts">
           <label class="field"><span>含めるもの</span><select id="insAssetKind"><option value="invest">投資のみ</option><option value="invest_cash">現金・預金＋投資</option><option value="net">純資産全体</option></select></label>
-          <label class="field"><span>対象</span><select id="insScope"><option value="全体">全体（夫婦合計）</option><option value="夫">夫</option><option value="妻">妻</option><option value="共通">共通</option></select></label>
+          <label class="field"><span>対象</span><select id="insScope"><option value="全体">夫婦合計</option><option value="夫">夫</option><option value="妻">妻</option><option value="共通">家族</option></select></label>
         </div>
         <label class="field"><span>現在の金融資産（円）</span><input type="number" id="insAssets" value="3000000" inputmode="numeric"></label>
         <p class="stat-sub" id="insSyncInfo" style="margin:-4px 0 10px;"></p>
@@ -661,7 +694,7 @@
         <h3>資産・家計簿と連動</h3>
         <label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="fireAutoSync" checked><span style="margin:0;">資産・家計簿の金額を自動で反映する</span></label>
         <div class="grid-2">
-          <label class="field"><span>対象</span><select id="fireScope"><option value="全体">全体</option><option value="夫">夫</option><option value="妻">妻</option><option value="共通">共通</option></select></label>
+          <label class="field"><span>対象</span><select id="fireScope"><option value="全体">夫婦合計</option><option value="夫">夫</option><option value="妻">妻</option><option value="共通">家族</option></select></label>
           <label class="field"><span>資産額に含めるもの</span><select id="fireAssetKind"><option value="invest_cash">現金・預金＋投資</option><option value="invest">投資のみ</option><option value="net">純資産全体</option></select></label>
         </div>
         <button class="ghost" id="fireSyncBtn" style="width:100%; display:none; margin-bottom:8px;">今すぐ反映する</button>
@@ -690,6 +723,24 @@
     <!-- 設定 -->
     <section class="pane" id="pane-settings">
       <h2 class="pane-title">設定・データ管理</h2>
+
+      <div class="card accent-lav">
+        <h3>🎂 プロフィール（生年月日）</h3>
+        <p class="stat-sub" style="margin-bottom:8px;">入れておくと、FIREや保険の「年齢」「保障期間」が自動で計算されます（毎年自動で変わります）。自分の分だけ入力できます。</p>
+        <label class="field"><span>夫の生年月日</span><input type="date" id="birthH"></label>
+        <label class="field"><span>妻の生年月日</span><input type="date" id="birthW"></label>
+        <label class="field"><span>末子（いちばん下の子）の生年月日（いれば）</span><input type="date" id="birthC"></label>
+        <p class="stat-sub" id="birthInfo"></p>
+      </div>
+
+      <div class="card accent-sun">
+        <h3>💰 月の予算</h3>
+        <p class="stat-sub" style="margin-bottom:8px;">家族の分と自分の分の予算を決められます。超えそうなときは、家計簿のトップで知らせます。</p>
+        <div class="scope-bar" id="budScopeBar"><button data-bs="家族">家族</button><button data-bs="夫">夫</button><button data-bs="妻">妻</button></div>
+        <label class="field"><span>1か月の予算の合計（円・空欄＝設定しない）</span><input type="number" id="budTotal" inputmode="numeric" placeholder="例）250000"></label>
+        <p class="stat-sub" style="margin:4px 0;">カテゴリごとの予算（任意）</p>
+        <div class="bd-grid" id="budCats"></div>
+      </div>
 
       <div class="card accent-teal">
         <h3>📥 バックアップ</h3>
@@ -1133,6 +1184,11 @@
         insAssetKind: settings.insAssetKind || "invest",
         insScope: settings.insScope || "全体",
         settled: settings.settled || {},
+        birth: settings.birth || {},
+        budgets: settings.budgets || {},
+        goals: settings.goals || [],
+        insLivAuto: settings.insLivAuto !== false,
+        insLivRatio: settings.insLivRatio || 70,
         templates: settings.templates || []
       }).catch(dbErr);
     } else { saveSettingsLocal(); }
@@ -1284,6 +1340,11 @@
           if (s && typeof s.insAssetKind === "string") settings.insAssetKind = s.insAssetKind;
           if (s && typeof s.insScope === "string") settings.insScope = s.insScope;
           settings.settled = (s && s.settled) ? clone(s.settled) : {};
+          settings.birth = (s && s.birth) ? clone(s.birth) : {};
+          settings.budgets = (s && s.budgets) ? clone(s.budgets) : {};
+          settings.goals = (s && Array.isArray(s.goals)) ? clone(s.goals) : [];
+          if (s && typeof s.insLivAuto === "boolean") settings.insLivAuto = s.insLivAuto;
+          if (s && typeof s.insLivRatio === "number") settings.insLivRatio = s.insLivRatio;
           settings.templates = (s && Array.isArray(s.templates)) ? clone(s.templates) : [];
         }
         // ドキュメントがまだ存在しない（初回・共有設定未保存）場合でも、
@@ -2912,7 +2973,7 @@
     document.getElementById("insAssetsOut").textContent = "−" + yen(assets).replace("¥","");
     document.getElementById("insNeed").textContent = yen(need);
   }
-  document.getElementById("insRun").addEventListener("click", runInsurance);
+  document.getElementById("insRun").addEventListener("click", function(){ runInsurance(); });
 
   function runPension(){
     var kisoMonths = Math.min(480, Number(document.getElementById("penKisoMonths").value) || 0);
@@ -3476,8 +3537,8 @@
       + '<div class="kp-amount"><span class="kp-yen">¥</span><span id="kpAmt">'+kpShow()+'</span></div><div class="kp-calc" id="kpSub">'+(/[÷×−+]/.test(kp.expr) ? ("＝ " + yen(kpCalc(kp.expr))) : "")+'</div>'
       + '<div class="kp-rc"><label class="kp-rcbtn">📷 レシートから入力<input type="file" id="kpRcFile" accept="image/*" style="display:none"></label><span id="kpRcSt" class="stat-sub" style="margin:0;">'+rcStatus+'</span></div>'
       + kpChipsHtml()
-      + '<div class="grid-2"><label class="field"><span>日付</span><input type="date" id="kpDate" value="'+kp.date+'"></label>'
-      + '<label class="field"><span>カテゴリ</span><select id="kpCat">'+cats.map(function(c){ return '<option value="'+c.name+'"'+(c.name===kp.cat?' selected':'')+'>'+c.name+'</option>'; }).join("")+'</select></label></div>'
+      + '<label class="field"><span>日付</span><input type="date" id="kpDate" value="'+kp.date+'"></label>'
+      + '<div class="kp-row"><span class="kp-lab">カテゴリ</span></div><div class="kp-cats">'+cats.map(function(c){ return pill("kpcat", c.name, c.name, c.name===kp.cat, false); }).join("")+'</div>'
       + '<div class="kp-row"><span class="kp-lab">誰の分</span><div class="kp-pills">'
         + [["共通","家族"],["夫","夫"],["妻","妻"]].map(function(o){ return pill("kpsplit", o[0], o[1], kp.split===o[0], !canEditSplit(o[0])); }).join("") + '</div></div>'
       + (kp.type === "expense" ? '<div class="kp-row"><span class="kp-lab">払った人</span><div class="kp-pills">' + ["夫","妻"].map(function(o){ return pill("kppayer", o, o, kp.payer===o, false); }).join("") + '</div></div>' : '')
@@ -3498,7 +3559,7 @@
     el.querySelectorAll("[data-kpsplit]").forEach(function(b){ b.addEventListener("click", function(){ kp.split = b.dataset.kpsplit; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kppayer]").forEach(function(b){ b.addEventListener("click", function(){ kp.payer = b.dataset.kppayer; renderKeypad(); }); });
     el.querySelector("#kpDate").addEventListener("change", function(ev){ kp.date = ev.target.value; });
-    el.querySelector("#kpCat").addEventListener("change", function(ev){ kp.cat = ev.target.value; kp.sub = ""; kp.quad = null; renderKeypad(); });
+    el.querySelectorAll("[data-kpcat]").forEach(function(b){ b.addEventListener("click", function(){ kp.cat = b.dataset.kpcat; kp.sub = ""; kp.quad = null; renderKeypad(); }); });
     el.querySelector("#kpMore").addEventListener("click", function(){ kp.more = !kp.more; renderKeypad(); });
     var bind = function(id, fn, evn){ var x = el.querySelector(id); if (x) x.addEventListener(evn || "change", fn); };
     bind("#kpSubSel", function(ev){ kp.sub = ev.target.value; });
@@ -3746,6 +3807,196 @@
     try { renderReport(); } catch(e) { console.error(e); }
     try { renderHistory(); renderBackupInfo(); } catch(e) { console.error(e); }
   };
+
+  // ================= 生年月日・予算・目標・ホーム・FIRE/保険の自動連携 =================
+  function ageOf(b){
+    if (!b) return null; var d = new Date(b), n = new Date(); if (isNaN(d)) return null;
+    var a = n.getFullYear() - d.getFullYear();
+    if (n.getMonth() < d.getMonth() || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) a--;
+    return a;
+  }
+  function birthOf(who){ return (settings.birth || {})[who] || ""; }
+  function ageFor(scope){
+    var order = (scope === "夫" || scope === "妻") ? [scope] : [myRole(), myRole() === "夫" ? "妻" : "夫"];
+    for (var i = 0; i < order.length; i++) { var a = ageOf(birthOf(order[i])); if (a !== null && a >= 0) return { age: a, who: order[i] }; }
+    return null;
+  }
+  function renderBirth(){
+    var map = { "夫": "birthH", "妻": "birthW", "子": "birthC" };
+    Object.keys(map).forEach(function(k){
+      var el = document.getElementById(map[k]); if (!el) return;
+      if (document.activeElement !== el) el.value = birthOf(k);
+      el.disabled = (k === "夫" || k === "妻") ? !canEditSplit(k) : false;
+    });
+    var ia = [];
+    ["夫","妻"].forEach(function(k){ var a = ageOf(birthOf(k)); if (a !== null) ia.push(k + "：" + a + "歳"); });
+    var ca = ageOf(birthOf("子")); if (ca !== null) ia.push("末子：" + ca + "歳");
+    var info = document.getElementById("birthInfo"); if (info) info.textContent = ia.join(" ・ ");
+  }
+  [["birthH","夫"],["birthW","妻"],["birthC","子"]].forEach(function(p){
+    document.getElementById(p[0]).addEventListener("change", function(){
+      settings.birth = Object.assign({}, settings.birth); settings.birth[p[1]] = this.value; persistSettings(); renderBirth(); runFireWithSync(); runInsurance();
+    });
+  });
+
+  // ---- 予算 ----
+  var budScope = null;
+  function budgetOf(sc){ return ((settings.budgets || {})[sc]) || { total: 0, cats: {} }; }
+  function setBudget(sc, b){ settings.budgets = Object.assign({}, settings.budgets); settings.budgets[sc] = b; persistSettings(); }
+  function renderBudgetEditor(){
+    var bar = document.getElementById("budScopeBar"); if (!bar) return;
+    if (!budScope || !canEditOwn(budScope)) budScope = canEditOwn(myRole()) ? "家族" : "家族";
+    bar.querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.bs === budScope); b.disabled = !canEditOwn(b.dataset.bs); b.style.opacity = b.disabled ? .45 : 1; });
+    var b = budgetOf(budScope);
+    var t = document.getElementById("budTotal"); if (document.activeElement !== t) t.value = b.total || "";
+    var cats = catsFor("expense", budScope), host = document.getElementById("budCats");
+    if (document.activeElement && host.contains(document.activeElement)) return;
+    host.innerHTML = cats.map(function(c){ return '<span>'+c.name+'</span><input type="number" inputmode="numeric" data-bc="'+c.name+'" value="'+(b.cats && b.cats[c.name] ? b.cats[c.name] : "")+'" placeholder="なし">'; }).join("");
+    host.querySelectorAll("input").forEach(function(inp){ inp.addEventListener("change", function(){
+      var cur = clone(budgetOf(budScope)); cur.cats = cur.cats || {};
+      var v = Number(inp.value) || 0; if (v > 0) cur.cats[inp.dataset.bc] = v; else delete cur.cats[inp.dataset.bc];
+      setBudget(budScope, cur); renderHome();
+    }); });
+  }
+  document.querySelectorAll("#budScopeBar button").forEach(function(btn){ btn.addEventListener("click", function(){ if (btn.disabled) return; budScope = btn.dataset.bs; renderBudgetEditor(); }); });
+  document.getElementById("budTotal").addEventListener("change", function(){ var cur = clone(budgetOf(budScope)); cur.total = Number(this.value) || 0; setBudget(budScope, cur); renderHome(); });
+
+  // ---- ホーム（今月の状況） ----
+  function spentFor(sc, mk){
+    return monthEntries(mk).filter(function(e){ return e.type === "expense" && ownerOf(e) === sc; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+  }
+  function catSpentFor(sc, mk){
+    var m = {}; monthEntries(mk).forEach(function(e){ if (e.type === "expense" && ownerOf(e) === sc) m[e.category] = (m[e.category]||0) + Number(e.amount||0); }); return m;
+  }
+  function renderHome(){
+    var el = document.getElementById("homeCard"); if (!el) return;
+    var now = new Date(), mk = currentMonthKey(), dim = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate(), left = dim - now.getDate() + 1;
+    var E = monthEntries(mk), inc = 0, exp = 0;
+    E.forEach(function(e){ if (e.type === "income") inc += Number(e.amount||0); else if (e.type === "expense") exp += Number(e.amount||0); });
+    var today = todayStr(), todaySum = data.ledger.filter(function(e){ return e.date === today && e.type === "expense"; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+    var h = '<h3>📊 ' + (now.getMonth()+1) + '月の状況</h3>';
+    var scopes = ["家族", myRole()].filter(function(v,i,a){ return a.indexOf(v) === i; }), any = false;
+    scopes.forEach(function(sc){
+      var b = budgetOf(sc); if (!b.total) return; any = true;
+      var sp = spentFor(sc, mk), pct = Math.round(sp / b.total * 100), rest = b.total - sp;
+      h += '<div class="hm-row"><div class="hm-top"><span>' + sc + 'の予算</span><span>' + yen(sp) + ' / ' + yen(b.total) + '</span></div>'
+        + '<div class="hm-bar"><div class="hm-fill ' + (pct >= 100 ? "over" : (pct >= 80 ? "warn" : "")) + '" style="width:' + Math.min(100, pct) + '%"></div></div>'
+        + '<div class="hm-sub">' + (rest >= 0 ? '残り ' + yen(rest) + '（1日あたり ' + yen(Math.floor(rest / Math.max(1,left))) + '）' : '⚠ 予算を ' + yen(-rest) + ' 超えています') + '</div></div>';
+      var cs = catSpentFor(sc, mk), warn = [];
+      Object.keys(b.cats || {}).forEach(function(c){ var p = (cs[c]||0) / b.cats[c]; if (p >= 0.8) warn.push((p >= 1 ? "🔴 " : "🟠 ") + c + " " + Math.round(p*100) + "%"); });
+      if (warn.length) h += '<div class="hm-sub" style="margin-bottom:4px;">' + warn.join("　") + '</div>';
+    });
+    if (!any) h += '<div class="hm-row"><div class="hm-top"><span>今月の支出</span><span>' + yen(exp) + '</span></div><div class="hm-sub">収入 ' + yen(inc) + ' ・ 設定の「月の予算」を決めると、残りと使える額が出ます。</div></div>';
+    h += '<div class="hm-row hm-sub">今日の支出：<b>' + yen(todaySum) + '</b></div>';
+    el.innerHTML = h;
+  }
+
+  // ---- 貯金・資産の目標 ----
+  function assetSumFor(scope, kind){
+    var assets = data.assets.filter(function(a){ return fireScopeMatch(scope, a.owner); });
+    var liabs = data.liabilities.filter(function(l){ return fireScopeMatch(scope, l.owner); });
+    var isInvest = function(a){ return a.type === "投資（株式・投信）"; }, isCash = function(a){ return a.type === "現金・預金"; };
+    var base = kind === "invest" ? assets.filter(isInvest) : (kind === "invest_cash" ? assets.filter(function(a){ return isInvest(a) || isCash(a); }) : assets);
+    var sum = base.reduce(function(s,a){ return s + assetValue(a); }, 0);
+    if (kind === "net") sum -= liabs.reduce(function(s,l){ return s + Number(l.amount||0); }, 0);
+    return sum;
+  }
+  function renderGoals(){
+    var el = document.getElementById("goalList"); if (!el) return;
+    var gs = settings.goals || [];
+    if (!gs.length) { el.innerHTML = '<p class="empty">まだ目標がありません</p>'; return; }
+    var sl = { "全体": "夫婦合計", "夫": "夫", "妻": "妻", "共通": "家族" }, kl = { invest_cash: "現金・預金＋投資", net: "純資産", invest: "投資" };
+    el.innerHTML = gs.map(function(g){
+      var cur = assetSumFor(g.scope, g.kind), pct = g.amount > 0 ? Math.min(100, Math.round(cur / g.amount * 100)) : 0;
+      var extra = "";
+      if (g.date) { var days = Math.ceil((new Date(g.date) - new Date()) / 86400000); extra = days > 0 ? "・期限まであと" + days + "日（月あたり約 " + yen(Math.max(0, Math.round((g.amount - cur) / Math.max(1, days / 30)))) + " 必要）" : "・期限を過ぎました"; }
+      return '<div class="goal-row"><div class="hm-top"><span>' + g.name + '</span><span>' + pct + '%</span></div><div class="hm-bar"><div class="hm-fill" style="width:' + pct + '%"></div></div>'
+        + '<div class="hm-sub">' + yen(cur) + ' / ' + yen(g.amount) + '（' + sl[g.scope] + '・' + kl[g.kind] + '）' + extra + ' <button class="ghost small" data-delgoal="' + g.id + '" style="margin-left:6px;">削除</button></div></div>';
+    }).join("");
+    el.querySelectorAll("[data-delgoal]").forEach(function(b){ b.addEventListener("click", function(){ settings.goals = (settings.goals||[]).filter(function(g){ return g.id !== b.dataset.delgoal; }); persistSettings(); renderGoals(); }); });
+  }
+  document.getElementById("goalAdd").addEventListener("click", function(){
+    var name = document.getElementById("goalName").value.trim(), amt = Number(document.getElementById("goalAmt").value);
+    if (!name || !(amt > 0)) { showToast("名前と目標額を入れてください"); return; }
+    settings.goals = (settings.goals||[]).concat([{ id: uid(), name: name, amount: amt, scope: document.getElementById("goalScope").value, kind: document.getElementById("goalKind").value, date: document.getElementById("goalDate").value || "" }]).slice(-10);
+    persistSettings(); document.getElementById("goalName").value = ""; document.getElementById("goalAmt").value = ""; document.getElementById("goalDate").value = ""; renderGoals();
+  });
+
+  // ---- カレンダーのスワイプ ----
+  (function(){
+    var host = document.getElementById("calBody"); if (!host) return; var x0 = null, y0 = null;
+    host.addEventListener("touchstart", function(e){ var t = e.changedTouches[0]; x0 = t.clientX; y0 = t.clientY; }, { passive: true });
+    host.addEventListener("touchend", function(e){
+      if (x0 === null) return; var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+      var b = document.getElementById(dx < 0 ? "calNext" : "calPrev"); if (b) b.click();
+    }, { passive: true });
+  })();
+
+  // ---- FIRE / 保険 の自動連携（年齢・生活費・保障期間） ----
+  function computeInsAuto(){
+    var out = {}; var scope = "全体";
+    var sp = annualSpendEstimate(scope);
+    if (sp > 0) out.living = Math.round(sp / 12 * (Number(settings.insLivRatio) || 70) / 100 / 1000) * 1000;
+    var ca = ageOf(birthOf("子"));
+    if (ca !== null && ca >= 0) out.years = Math.max(1, 22 - ca);
+    return out;
+  }
+  function applyInsAuto(){
+    var auto = settings.insLivAuto !== false;
+    var chk = document.getElementById("insLivAuto"); if (!chk) return;
+    chk.checked = auto;
+    document.getElementById("insLivRatio").value = settings.insLivRatio || 70;
+    document.getElementById("insRatioWrap").style.display = auto ? "" : "none";
+    var L = document.getElementById("insLiving"), Y = document.getElementById("insYears"), info = document.getElementById("insLivInfo");
+    if (!auto) { L.readOnly = false; Y.readOnly = false; info.textContent = "自動計算はオフです。手入力してください。"; return; }
+    var r = computeInsAuto(), n = [];
+    if (r.living) { L.value = r.living; L.readOnly = true; n.push("生活費：家計の年間支出÷12×" + (settings.insLivRatio||70) + "% を反映中"); } else { L.readOnly = false; n.push("支出の記録がないため、生活費は手入力の値を使っています"); }
+    if (r.years) { Y.value = r.years; Y.readOnly = true; n.push("保障期間：末子が22歳になるまで（あと" + r.years + "年）"); } else { Y.readOnly = false; n.push("プロフィールに末子の生年月日を入れると、保障期間が自動で出ます"); }
+    info.innerHTML = n.join("<br>");
+  }
+  document.getElementById("insLivAuto").addEventListener("change", function(){ updateFireSettings({ insLivAuto: this.checked }); runInsurance(); });
+  document.getElementById("insLivRatio").addEventListener("change", function(){ updateFireSettings({ insLivRatio: Number(this.value) || 70 }); runInsurance(); });
+
+  var _runInsuranceBase = runInsurance;
+  runInsurance = function(){ try { applyInsAuto(); } catch(e) { console.error(e); } _runInsuranceBase(); };
+  var _syncFireBase = syncFireFromData;
+  syncFireFromData = function(){
+    _syncFireBase();
+    try {
+      var ag = ageFor(settings.fireScope || "全体"), el = document.getElementById("fireAge");
+      if (ag) { el.value = ag.age; el.readOnly = true; document.getElementById("fireSyncInfo").innerHTML += "<br>年齢：" + ag.age + "歳（" + ag.who + "の生年月日から自動）"; }
+      else { el.readOnly = false; document.getElementById("fireSyncInfo").innerHTML += "<br>設定のプロフィールに生年月日を入れると、年齢が自動で出ます"; }
+    } catch(e) { console.error(e); }
+  };
+
+  // ---- 月末の振り返りのお知らせ / バックアップの月初リマインド ----
+  var _renderNoticeBase = renderNotice;
+  renderNotice = function(){
+    _renderNoticeBase();
+    try {
+      var el = document.getElementById("noticeBar"), d = new Date(), day = d.getDate(), mk = null;
+      if (day >= 28) mk = currentMonthKey(); else if (day <= 3) mk = shiftMonthKey(currentMonthKey(), -1);
+      if (mk && lsGet("kakeibo_rp_seen") !== mk) {
+        el.insertAdjacentHTML("afterbegin", '<div class="notice blue"><div class="nt">📋 ' + mk.replace("-", "年") + '月の振り返りができています。</div><button id="ntReport">見る</button></div>');
+        document.getElementById("ntReport").addEventListener("click", function(){ lsSet("kakeibo_rp_seen", mk); reportMonth = mk; showLgSub("chart"); renderReport(); renderNotice(); });
+      }
+      var last = Number(lsGet("kakeibo_last_backup") || 0), days = last ? Math.floor((Date.now() - last) / 86400000) : 999;
+      if (day <= 5 && days >= 20 && days < 30 && !el.querySelector("#ntBackup")) {
+        el.insertAdjacentHTML("beforeend", '<div class="notice"><div class="nt">💾 月初です。今月のバックアップを取りませんか？（前回から' + days + '日）</div><button id="ntBackup2">今すぐ保存</button></div>');
+        document.getElementById("ntBackup2").addEventListener("click", function(){ document.getElementById("exportBtn").click(); });
+      }
+    } catch(e) { console.error(e); }
+  };
+
+  var _renderLedgerBase2 = renderLedger;
+  renderLedger = function(){
+    _renderLedgerBase2();
+    try { renderHome(); } catch(e) { console.error(e); }
+    try { renderBirth(); renderBudgetEditor(); renderGoals(); } catch(e) { console.error(e); }
+  };
+  var _renderAssetsBase = renderAssets;
+  renderAssets = function(){ _renderAssetsBase(); try { renderGoals(); } catch(e) { console.error(e); } };
 
   function renderAll(){
     renderLedger(); renderAssets(); renderFixedCosts(); refreshHeader();
