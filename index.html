@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="20261025123611">
+<meta name="app-build" content="20261025152501">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -179,7 +179,10 @@
   .hm-fill.warn { background:#F5A524; } .hm-fill.over { background:#E8503F; }
   .hm-sub { color:var(--sub); font-size:12px; }
   .kp-cats { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 10px; }
-  .kp-cats .kp-pill { padding:8px 12px; }
+  .kp-cats .kp-pill { flex:0 0 auto; padding:8px 14px; white-space:nowrap; }
+  .kp-quads { display:grid; grid-template-columns:1fr 1fr; gap:6px; flex:1; }
+  .kp-quads .kp-pill { font-size:12px; padding:8px 4px; white-space:nowrap; }
+  .kp-amtbox { position:sticky; bottom:0; background:var(--card,#fff); border-top:2px solid var(--line); margin:8px -4px 6px; padding:4px 8px 2px; z-index:3; border-radius:14px; }
   .goal-row { margin:12px 0; }
   .bd-grid { display:grid; grid-template-columns: 1fr 120px; gap:6px 10px; align-items:center; }
   .bd-grid input { width:100%; }
@@ -236,6 +239,9 @@
   #catTable .cat-row.own-head { margin-top: 12px; padding: 12px 12px; background: #F3EFE8; border-bottom: none; font-size: 14px; }
   #catTable .cat-row.sub-row { padding: 5px 6px 5px 26px; font-size: 12.5px; background: transparent; }
   #catTable .cat-amt { min-width: 92px; text-align: right; }
+  #catTable .cat-name-clickable { text-decoration: none; font-weight: 700; }
+  #catTable .cat-main { border-radius: 10px; margin: 2px 0; padding: 12px 8px; border-bottom: none; }
+  #catTable .cat-more { text-align: center; color: #0C7A6E; background: var(--teal-soft); border-radius: 999px; padding: 9px 12px; font-size: 12.5px; font-weight: 700; margin: 8px 0 4px; cursor: pointer; }
   .cat-row.sub-row { padding: 4px 0 4px 16px; font-size: 12px; color: var(--sub); border-bottom: none; }
   .cat-row.sub-row .cat-amt { font-weight: 600; }
   .quick-add-panel { scroll-margin-top: 150px; scroll-margin-bottom: 80px; width: 100%; background: #FBF9F4; border-radius: var(--radius-m); padding: 12px 14px; margin: 6px 0 10px; }
@@ -344,6 +350,15 @@
       </div>
 
       <div class="card accent-lav" data-lgsub-pane="chart" id="reportCard"><div class="table-nav"><button class="ghost small" id="rpPrev">◀</button><div class="table-nav-label" id="rpLabel">📋 月の振り返り</div><button class="ghost small" id="rpNext">▶</button></div><div id="reportBody"></div></div>
+
+      <div class="card accent-sun" data-lgsub-pane="chart" id="budgetCard">
+        <h3>💰 月の予算</h3>
+        <p class="stat-sub" style="margin-bottom:8px;">家族の分と自分の分の予算を決められます。超えそうなときは、家計簿のトップで知らせます。</p>
+        <div class="scope-bar" id="budScopeBar"><button data-bs="家族">家族</button><button data-bs="夫">夫</button><button data-bs="妻">妻</button></div>
+        <label class="field"><span>1か月の予算の合計（円・空欄＝設定しない）</span><input type="number" id="budTotal" inputmode="numeric" placeholder="例）250000"></label>
+        <p class="stat-sub" style="margin:4px 0;">カテゴリごとの予算（任意）</p>
+        <div class="bd-grid" id="budCats"></div>
+      </div>
 
       <div class="card accent-sun" data-lgsub-pane="chart">
         <h3>今月の実質支出・精算</h3>
@@ -739,14 +754,6 @@
         <p class="stat-sub" id="birthInfo"></p>
       </div>
 
-      <div class="card accent-sun">
-        <h3>💰 月の予算</h3>
-        <p class="stat-sub" style="margin-bottom:8px;">家族の分と自分の分の予算を決められます。超えそうなときは、家計簿のトップで知らせます。</p>
-        <div class="scope-bar" id="budScopeBar"><button data-bs="家族">家族</button><button data-bs="夫">夫</button><button data-bs="妻">妻</button></div>
-        <label class="field"><span>1か月の予算の合計（円・空欄＝設定しない）</span><input type="number" id="budTotal" inputmode="numeric" placeholder="例）250000"></label>
-        <p class="stat-sub" style="margin:4px 0;">カテゴリごとの予算（任意）</p>
-        <div class="bd-grid" id="budCats"></div>
-      </div>
 
       <div class="card accent-teal">
         <h3>📥 バックアップ</h3>
@@ -903,10 +910,11 @@
   var SETTINGS_KEY = "moneyNoteSettings_v4";
 
   var QUAD_LABELS = { "1": "① 固定費・毎月", "2": "② 変動費・毎月", "3": "③ 固定費・不定期", "4": "④ 変動費・不定期" };
+  function catQuad(c){ return (c && c.quad) ? Number(c.quad) : ((c && c.irregular) ? 4 : 2); }
   function classifyQuadrant(e, catObj){
     if (e.quadrant) return e.quadrant;
     if (e.irregular !== undefined) return e.irregular ? 4 : 2; // 旧データ互換
-    return (catObj && catObj.irregular) ? 4 : 2;
+    return catQuad(catObj);
   }
   var DEFAULT_EXPENSE_CATS = [
     { name: "食費", subs: ["スーパー","外食","コンビニ","カフェ"], irregular: false },
@@ -1617,7 +1625,7 @@
     var subs = subsFor(catObj, own);
     var isCurrent = monthKey === currentMonthKey();
     var defaultDate = isCurrent ? todayStr() : (monthKey + "-01");
-    var defQuad = catObj.irregular ? 4 : 2;
+    var defQuad = catQuad(catObj);
     var accounts = linkableAccounts();
     var accountOptions = '<option value="">指定しない</option>' + accounts.map(function(a){ return '<option value="'+a.id+'">'+a.name+'</option>'; }).join("");
     var catSelHtml = '<label class="field"><span>中カテゴリ</span><select class="qa-cat">' + catsFor(type, own).map(function(c){ return '<option value="'+c.name+'"'+(c.name===catObj.name?' selected':'')+'>'+c.name+'</option>'; }).join("") + '</select></label>';
@@ -1648,6 +1656,7 @@
   // 大カテゴリ＝家族／夫／妻（保存上は従来の「誰の分」：共通／夫／妻）。中＝カテゴリ、小＝小カテゴリ。
   var OWNS = ["家族","夫","妻"];
   var ownOpen = {};
+  var ownShowAll = {};
   function ownerOf(e){ return e.split === "夫" ? "夫" : (e.split === "妻" ? "妻" : "家族"); }
   // 小カテゴリは、大（家族／夫／妻）ごとに別々に持てる。設定がなければ全員共通の一覧を使う。
   function subsFor(cat, own){ if (own && cat && cat.subsBy && Array.isArray(cat.subsBy[own])) return cat.subsBy[own]; return (cat && cat.subs) || []; }
@@ -1671,7 +1680,14 @@
       var open = visibleOwn && isOwnOpen(type, own);
       html += '<div class="cat-row own-head" data-type="'+type+'" data-own="'+own+'" data-vis="'+(visibleOwn?1:0)+'"'+(visibleOwn?'':' style="cursor:default;"')+'><span class="cat-name">'+(visibleOwn?(open?"▾ ":"▸ "):"")+own+(visibleOwn?'':'（合計のみ）')+'</span><span class="cat-amt">'+yen(total)+'</span><span style="width:40px;"></span></div>';
       if (!open) return;
-      cats.forEach(function(c){ html += catRowHtml(type, c, cursor, byCat, subSums, own); });
+      var showAll = !!ownShowAll[type + "|" + own];
+      var keep = function(c){ return showAll || (byCat[c.name]||0) > 0 || (tableQuickAdd && tableQuickAdd.type===type && tableQuickAdd.cat===c.name && tableQuickAdd.own===own); };
+      var vis = cats.filter(keep);
+      if (!showAll) vis = vis.slice().sort(function(a,b){ return (byCat[b.name]||0) - (byCat[a.name]||0); });
+      var hidN = cats.length - vis.length;
+      vis.forEach(function(c){ html += catRowHtml(type, c, cursor, byCat, subSums, own); });
+      if (hidN > 0 && !showAll) html += '<div class="cat-more" data-type="'+type+'" data-own="'+own+'">＋ 記録のないカテゴリ '+hidN+'件を表示（追加用）</div>';
+      else if (showAll) html += '<div class="cat-more" data-type="'+type+'" data-own="'+own+'">－ 記録のないカテゴリを隠す</div>';
       Object.keys(byCat).filter(function(n){ return !cats.some(function(c){ return c.name === n; }); }).forEach(function(n){
         html += catRowHtml(type, { name: n, subs: [], orphan: true }, cursor, byCat, subSums, own);
       });
@@ -1708,7 +1724,10 @@
     var isQuickOpen = tableQuickAdd && tableQuickAdd.type===type && tableQuickAdd.cat===key && tableQuickAdd.own===own && tableQuickAdd.periodKey===periodKey;
     var isExpanded = tableExpandedCat && tableExpandedCat.type===type && tableExpandedCat.cat===key && tableExpandedCat.own===own && tableExpandedCat.periodKey===periodKey;
     var addBtn = (cursor.type === "month" && !catObj.orphan && canEditOwn(own)) ? ('<button class="cat-add-btn" data-type="'+type+'" data-own="'+own+'" data-cat="'+key+'" title="追加">+</button>') : '<span style="width:40px;"></span>';
-    var html = '<div class="cat-row"><span class="cat-name cat-name-clickable" data-type="'+type+'" data-own="'+own+'" data-cat="'+key+'">'+(isExpanded?"▾ ":"")+(catObj.orphan?"（削除済み）":"")+key+'</span><span class="cat-amt">'+yen(amt)+'</span>'+addBtn+'</div>';
+    var ownSum = Object.keys(sumsByCat).reduce(function(s,k){ return s + (sumsByCat[k]||0); }, 0);
+    var pct = ownSum > 0 ? Math.round(amt / ownSum * 100) : 0;
+    var barCol = type === "income" ? "rgba(18,179,160,.16)" : "rgba(238,117,97,.16)";
+    var html = '<div class="cat-row cat-main" style="background:linear-gradient(90deg,'+barCol+' '+pct+'%,transparent '+pct+'%);"><span class="cat-name cat-name-clickable" data-type="'+type+'" data-own="'+own+'" data-cat="'+key+'">'+(isExpanded?"▾ ":(amt>0?"▸ ":""))+(catObj.orphan?"（削除済み）":"")+key+'</span><span class="cat-amt">'+yen(amt)+'</span>'+addBtn+'</div>';
     if (isExpanded) {
       html += catTransactionListHtml(type, key, cursor, own);
     } else {
@@ -1787,6 +1806,9 @@
         showToast(list.length + "件を「" + to + "」へ移動しました");
         renderCatTable();
       });
+    });
+    document.querySelectorAll(".cat-more").forEach(function(m){
+      m.addEventListener("click", function(){ var k = m.dataset.type + "|" + m.dataset.own; ownShowAll[k] = !ownShowAll[k]; renderCatTable(); });
     });
     document.querySelectorAll(".own-head").forEach(function(h){
       if (h.dataset.vis === "0") return;
@@ -3185,7 +3207,7 @@
   function applyTargetLock(){
     var lock = !canEditTarget();
     ["subBulkExpense","subBulkIncome","subBulkApply","addExpenseCatBtn","addIncomeCatBtn","newExpenseCatName","newIncomeCatName"].forEach(function(id){ var el = document.getElementById(id); if (el) el.disabled = lock; });
-    document.querySelectorAll(".cat-subs-input,.cat-irregular-cb,.cat-del,.cat-up,.cat-down").forEach(function(el){ el.disabled = lock; });
+    document.querySelectorAll(".cat-subs-input,.cat-quad-sel,.cat-del,.cat-up,.cat-down").forEach(function(el){ el.disabled = lock; });
     ["subTargetNote","catTargetNote"].forEach(function(id){ var el = document.getElementById(id); if (el && lock) el.textContent = "「" + subTarget + "」の分は見るだけです（編集できるのは、家族と自分の分だけ）。"; });
   }
   document.getElementById("subTargetSel").addEventListener("change", function(){ setCatTarget(this.value); });
@@ -3215,7 +3237,7 @@
     function block(list, kind){
       return list.map(function(c, idx){
         var irregularCb = kind === "expense"
-          ? '<label style="display:flex; align-items:center; gap:4px; font-size:10.5px; color:var(--sub); white-space:nowrap;"><input type="checkbox" class="cat-irregular-cb" data-idx="'+idx+'" '+(c.irregular?"checked":"")+'>不定期</label>'
+          ? '<select class="cat-quad-sel" data-idx="'+idx+'" style="width:108px; flex:0 0 108px; margin:0; padding:6px 4px; font-size:11px;">'+[1,2,3,4].map(function(q){ return '<option value="'+q+'"'+(catQuad(c)===q?' selected':'')+'>'+["①固定・毎月","②変動・毎月","③固定・不定期","④変動・不定期"][q-1]+'</option>'; }).join("")+'</select>'
           : '';
         var reorder = '<span class="reorder-btns">'
           + '<button class="ghost tiny cat-up" data-kind="'+kind+'" data-idx="'+idx+'" title="上へ" '+(idx===0?"disabled":"")+'>▲</button>'
@@ -3228,7 +3250,7 @@
           + '<button class="del cat-del" data-kind="'+kind+'" data-idx="'+idx+'" title="削除">×</button></div>';
       }).join("");
     }
-    document.getElementById("catSettingsExpense").innerHTML = "<p class='stat-sub' style='margin-bottom:6px;'>支出カテゴリ（「不定期」は旅行・家電購入など毎月は発生しない支出）</p>" + block(listForTarget("expense"), "expense");
+    document.getElementById("catSettingsExpense").innerHTML = "<p class='stat-sub' style='margin-bottom:6px;'>支出カテゴリ（右の①〜④は「家計管理 4つの敵」の分類。入力するとき最初に選ばれます：①固定費・毎月 ②変動費・毎月 ③固定費・不定期 ④変動費・不定期）</p>" + block(listForTarget("expense"), "expense");
     document.getElementById("catSettingsIncome").innerHTML = "<p class='stat-sub' style='margin-bottom:6px;'>収入カテゴリ</p>" + block(listForTarget("income"), "income");
     fillSubBulk(false);
 
@@ -3253,11 +3275,11 @@
         renderLedger();
       });
     });
-    document.querySelectorAll(".cat-irregular-cb").forEach(function(cb){
+    document.querySelectorAll(".cat-quad-sel").forEach(function(cb){
       cb.addEventListener("change", function(){
         var idx = Number(cb.dataset.idx);
         var listI = writableList("expense");
-        listI[idx].irregular = cb.checked;
+        listI[idx].quad = Number(cb.value); listI[idx].irregular = (Number(cb.value) >= 3);
         updateCategorySettings();
         renderLedger();
       });
@@ -3519,7 +3541,7 @@
     if (!canEditSplit(kp.split)) { denyToast(); return; }
     var cats = catsFor(kp.type, splitLabel(kp.split));
     var catObj = cats.find(function(c){ return c.name === kp.cat; });
-    var q = kp.quad || ((catObj && catObj.irregular) ? 4 : 2);
+    var q = kp.quad || catQuad(catObj);
     var saved = { cat: kp.cat, type: kp.type };
     addLedger({
       date: kp.date || todayStr(), type: kp.type, category: kp.cat, subcategory: kp.sub || "", amount: val,
@@ -3544,7 +3566,6 @@
     var accounts = linkableAccounts();
     var pill = function(attr, val, label, on, dis){ return '<button type="button" class="kp-pill'+(on?' on':'')+(dis?' dis':'')+'" data-'+attr+'="'+val+'"'+(dis?' disabled':'')+'>'+label+'</button>'; };
     var html = '<div class="kp-types"><button data-kptype="expense" class="'+(kp.type==="expense"?'on':'')+'">支出</button><button data-kptype="income" class="'+(kp.type==="income"?'on':'')+'">収入</button></div>'
-      + '<div class="kp-amount"><span class="kp-yen">¥</span><span id="kpAmt">'+kpShow()+'</span></div><div class="kp-calc" id="kpSub">'+(/[÷×−+]/.test(kp.expr) ? ("＝ " + yen(kpCalc(kp.expr))) : "")+'</div>'
       + '<div class="kp-rc"><label class="kp-rcbtn">📷 レシートから入力<input type="file" id="kpRcFile" accept="image/*" style="display:none"></label><span id="kpRcSt" class="stat-sub" style="margin:0;">'+rcStatus+'</span></div>'
       + kpChipsHtml()
       + '<label class="field"><span>日付</span><input type="date" id="kpDate" value="'+kp.date+'"></label>'
@@ -3552,15 +3573,16 @@
       + '<div class="kp-row"><span class="kp-lab">誰の分</span><div class="kp-pills">'
         + [["共通","家族"],["夫","夫"],["妻","妻"]].map(function(o){ return pill("kpsplit", o[0], o[1], kp.split===o[0], !canEditSplit(o[0])); }).join("") + '</div></div>'
       + (kp.type === "expense" ? '<div class="kp-row"><span class="kp-lab">払った人</span><div class="kp-pills">' + ["夫","妻"].map(function(o){ return pill("kppayer", o, o, kp.payer===o, false); }).join("") + '</div></div>' : '')
-      + '<button type="button" class="ghost small" id="kpMore" style="margin:4px 0 8px;">'+(kp.more?'▾':'▸')+' さらに詳しく（小カテゴリ・口座・メモなど）</button>'
+      + (kp.type === "expense" ? ('<div class="kp-row" style="align-items:flex-start;"><span class="kp-lab">分類</span><div class="kp-quads">' + [1,2,3,4].map(function(q){ return pill("kpquad", q, QUAD_LABELS[q], Number(kp.quad || catQuad(catObj)) === q, false); }).join("") + '</div></div>') : '')
+      + '<button type="button" class="ghost small" id="kpMore" style=""margin:4px 0 8px;">'+(kp.more?'▾':'▸')+' さらに詳しく（小カテゴリ・口座・メモなど）</button>'
       + (kp.more ? ('<div class="kp-more">'
         + '<label class="field"><span>小カテゴリ</span><select id="kpSubSel"><option value="">指定なし</option>'+subs.map(function(x){ return '<option value="'+x+'"'+(x===kp.sub?' selected':'')+'>'+x+'</option>'; }).join("")+'</select></label>'
         + '<label class="field"><span>口座（選ぶと資産の金額を自動で増減・任意）</span><select id="kpAcc"><option value="">指定しない</option>'+accounts.map(function(a){ return '<option value="'+a.id+'"'+(a.id===kp.account?' selected':'')+'>'+a.name+'</option>'; }).join("")+'</select></label>'
         + '<label class="field"><span>メモ（任意）</span><input type="text" id="kpMemo" value="'+(kp.memo||"").replace(/"/g,"&quot;")+'" placeholder="例）スーパー"></label>'
-        + (kp.type === "expense" ? ('<label class="field"><span>分類（家計管理 4つの敵）</span><select id="kpQuad">'+['1','2','3','4'].map(function(qq){ var cur = kp.quad || ((catObj && catObj.irregular) ? 4 : 2); return '<option value="'+qq+'"'+(Number(qq)===Number(cur)?' selected':'')+'>'+QUAD_LABELS[qq]+'</option>'; }).join("")+'</select></label>'
-          + '<label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="kpWaste"'+(kp.waste?' checked':'')+'><span style="margin:0;">😅 無駄遣いだったかも</span></label>') : '')
+        + (kp.type === "expense" ? ('<label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="kpWaste"'+(kp.waste?' checked':'')+'><span style="margin:0;">😅 無駄遣いだったかも</span></label>') : '')
         + (canPrivate() ? '<label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="kpPriv"'+(kp.priv?' checked':'')+'><span style="margin:0;">🔒 配偶者に見せない（自分だけ）</span></label>' : '')
         + '</div>') : '')
+      + '<div class="kp-amtbox"><div class="kp-amount"><span class="kp-yen">¥</span><span id="kpAmt">'+kpShow()+'</span></div><div class="kp-calc" id="kpSub">'+(/[÷×−+]/.test(kp.expr) ? ("＝ " + yen(kpCalc(kp.expr))) : "")+'</div></div>'
       + '<div class="kp-keys">'
       + ["7","8","9","÷","4","5","6","×","1","2","3","−","C","0","00","+"].map(function(k){ return '<button type="button" class="kp-key'+("÷×−+".indexOf(k)>=0?' op':(k==="C"?' clr':''))+'" data-k="'+k+'">'+k+'</button>'; }).join("")
       + '<button type="button" class="kp-key clr" data-k="⌫">⌫</button><button type="button" class="kp-key ok" id="kpOk">記録する</button></div>';
@@ -3575,7 +3597,7 @@
     bind("#kpSubSel", function(ev){ kp.sub = ev.target.value; });
     bind("#kpAcc", function(ev){ kp.account = ev.target.value; });
     bind("#kpMemo", function(ev){ kp.memo = ev.target.value; }, "input");
-    bind("#kpQuad", function(ev){ kp.quad = Number(ev.target.value); });
+    el.querySelectorAll("[data-kpquad]").forEach(function(b){ b.addEventListener("click", function(){ kp.quad = Number(b.dataset.kpquad); renderKeypad(); }); });
     bind("#kpWaste", function(ev){ kp.waste = ev.target.checked; });
     bind("#kpPriv", function(ev){ kp.priv = ev.target.checked; });
     el.querySelectorAll(".kp-key[data-k]").forEach(function(b){ b.addEventListener("click", function(){ kpPress(b.dataset.k); }); });
@@ -3896,7 +3918,7 @@
       Object.keys(b.cats || {}).forEach(function(c){ var p = (cs[c]||0) / b.cats[c]; if (p >= 0.8) warn.push((p >= 1 ? "🔴 " : "🟠 ") + c + " " + Math.round(p*100) + "%"); });
       if (warn.length) h += '<div class="hm-sub" style="margin-bottom:4px;">' + warn.join("　") + '</div>';
     });
-    if (!any) h += '<div class="hm-row"><div class="hm-top"><span>今月の支出</span><span>' + yen(exp) + '</span></div><div class="hm-sub">収入 ' + yen(inc) + ' ・ 設定の「月の予算」を決めると、残りと使える額が出ます。</div></div>';
+    if (!any) h += '<div class="hm-row"><div class="hm-top"><span>今月の支出</span><span>' + yen(exp) + '</span></div><div class="hm-sub">収入 ' + yen(inc) + ' ・ 「グラフ」の「月の予算」を決めると、残りと使える額が出ます。</div></div>';
     h += '<div class="hm-row hm-sub">今日の支出：<b>' + yen(todaySum) + '</b></div>';
     el.innerHTML = h;
   }
