@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
+<meta name="app-build" content="20261025123611">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -670,6 +671,11 @@
     <section class="pane" id="pane-pension">
       <h2 class="pane-title">年金の見込み額</h2>
       <p class="pane-note">老齢基礎年金（国民年金）と老齢厚生年金の見込み額を、簡易的な計算式で概算します。正確な金額は「ねんきん定期便」や「ねんきんネット」でご確認ください。</p>
+      <div class="card accent-teal">
+        <label class="field"><span>誰の年金か</span><select id="penWho"><option value="夫">夫</option><option value="妻">妻</option></select></label>
+        <label class="field" style="display:flex; flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="penAuto" checked><span style="margin:0;">生年月日と家計簿の収入から自動で計算する</span></label>
+        <p class="stat-sub" id="penAutoInfo" style="margin:0;"></p>
+      </div>
       <div class="card accent-lav">
         <label class="field"><span>国民年金の納付予定月数（満額は480ヶ月＝40年）</span><input type="number" id="penKisoMonths" value="480" max="480"></label>
         <label class="field"><span>厚生年金の加入予定月数</span><input type="number" id="penKouseiMonths" value="360"></label>
@@ -1188,6 +1194,8 @@
         budgets: settings.budgets || {},
         goals: settings.goals || [],
         insLivAuto: settings.insLivAuto !== false,
+        penAuto: settings.penAuto !== false,
+        penWho: settings.penWho || "",
         insLivRatio: settings.insLivRatio || 70,
         templates: settings.templates || []
       }).catch(dbErr);
@@ -1344,6 +1352,8 @@
           settings.budgets = (s && s.budgets) ? clone(s.budgets) : {};
           settings.goals = (s && Array.isArray(s.goals)) ? clone(s.goals) : [];
           if (s && typeof s.insLivAuto === "boolean") settings.insLivAuto = s.insLivAuto;
+          if (s && typeof s.penAuto === "boolean") settings.penAuto = s.penAuto;
+          if (s && typeof s.penWho === "string" && s.penWho) settings.penWho = s.penWho;
           if (s && typeof s.insLivRatio === "number") settings.insLivRatio = s.insLivRatio;
           settings.templates = (s && Array.isArray(s.templates)) ? clone(s.templates) : [];
         }
@@ -3835,7 +3845,7 @@
   }
   [["birthH","夫"],["birthW","妻"],["birthC","子"]].forEach(function(p){
     document.getElementById(p[0]).addEventListener("change", function(){
-      settings.birth = Object.assign({}, settings.birth); settings.birth[p[1]] = this.value; persistSettings(); renderBirth(); runFireWithSync(); runInsurance();
+      settings.birth = Object.assign({}, settings.birth); settings.birth[p[1]] = this.value; persistSettings(); renderBirth(); runFireWithSync(); runInsurance(); runPension();
     });
   });
 
@@ -3998,11 +4008,73 @@
   var _renderAssetsBase = renderAssets;
   renderAssets = function(){ _renderAssetsBase(); try { renderGoals(); } catch(e) { console.error(e); } };
 
+  // ---- 年金・遺族年金の自動連携 ----
+  function annualIncomeOf(who){
+    var rows = data.ledger.filter(function(e){ return e.type === "income" && e.split === who && e.date && !e._hidden; });
+    var since = new Date(Date.now() - 365*86400000).toISOString().slice(0,10);
+    rows = rows.filter(function(e){ return e.date >= since; });
+    if (!rows.length) return 0;
+    var first = rows.reduce(function(m,e){ return e.date < m ? e.date : m; }, rows[0].date);
+    var nw = new Date(), fd = new Date(first), months = Math.max(1, Math.min(12, (nw.getFullYear() - fd.getFullYear()) * 12 + nw.getMonth() - fd.getMonth() + 1));
+    return Math.round(rows.reduce(function(s,e){ return s + Number(e.amount||0); }, 0) / months * 12 / 10000) * 10000;
+  }
+  function applyPensionAuto(){
+    var chk = document.getElementById("penAuto"); if (!chk) return;
+    var auto = settings.penAuto !== false; chk.checked = auto;
+    var who = settings.penWho || myRole(); document.getElementById("penWho").value = who;
+    var ids = ["penKisoMonths","penKouseiMonths","penAvgIncome","wpAvgIncome"], info = document.getElementById("penAutoInfo");
+    if (!auto) { ids.forEach(function(i){ document.getElementById(i).readOnly = false; }); info.textContent = "自動計算はオフです。手入力してください。"; return; }
+    var n = [], a = ageOf(birthOf(who));
+    if (a !== null && a >= 0) {
+      var kiso = a >= 60 ? 480 : Math.min(480, Math.max(0, (60 - Math.max(20, 0)) * 12));
+      var kou = Math.max(0, Math.min(480, (60 - 22) * 12));
+      document.getElementById("penKisoMonths").value = kiso; document.getElementById("penKouseiMonths").value = kou;
+      n.push(who + "（" + a + "歳）：20歳〜60歳の国民年金" + kiso + "ヶ月、22歳〜60歳の厚生年金" + kou + "ヶ月で計算");
+    } else n.push("プロフィールに" + who + "の生年月日を入れると、加入月数が自動で入ります（いまは手入力の値）");
+    ["penKisoMonths","penKouseiMonths"].forEach(function(i){ document.getElementById(i).readOnly = (a !== null && a >= 0); });
+    var inc = annualIncomeOf(who);
+    if (inc > 0) { document.getElementById("penAvgIncome").value = inc; document.getElementById("penAvgIncome").readOnly = true; n.push("平均年収：直近の" + who + "の収入から年換算で " + yen(inc)); }
+    else { document.getElementById("penAvgIncome").readOnly = false; n.push("収入の記録（誰の分＝" + who + "）がないため、平均年収は手入力の値です"); }
+    var inc2 = Math.max(annualIncomeOf("夫"), annualIncomeOf("妻"));
+    var wp = document.getElementById("wpAvgIncome");
+    if (inc2 > 0) { wp.value = inc2; wp.readOnly = true; n.push("遺族年金の平均年収：夫婦の高い方（" + yen(inc2) + "）で計算"); } else wp.readOnly = false;
+    info.innerHTML = n.join("<br>");
+  }
+  document.getElementById("penAuto").addEventListener("change", function(){ updateFireSettings({ penAuto: this.checked }); runPension(); try { runWidowPension(); } catch(e) {} });
+  document.getElementById("penWho").addEventListener("change", function(){ updateFireSettings({ penWho: this.value }); runPension(); });
+  var _runPensionBase = runPension;
+  runPension = function(){ try { applyPensionAuto(); } catch(e) { console.error(e); } _runPensionBase(); };
+  var _runWidowBase = runWidowPension;
+  runWidowPension = function(){ try { applyPensionAuto(); } catch(e) { console.error(e); } return _runWidowBase(); };
+  var _renderLedgerBase3 = renderLedger;
+  renderLedger = function(){ _renderLedgerBase3(); try { applyPensionAuto(); runPension(); } catch(e) {} };
+
   function renderAll(){
     renderLedger(); renderAssets(); renderFixedCosts(); refreshHeader();
     runInvestSim(); runInsurance(); runWidowPension(); runPension(); runFireWithSync();
   }
   initSync();
+})();
+</script>
+<script>
+(function(){
+  var m = document.querySelector('meta[name="app-build"]'); if (!m || location.protocol === "file:") return;
+  var BUILD = m.content;
+  function bar(){
+    if (document.getElementById("updBar")) return;
+    var d = document.createElement("div"); d.id = "updBar";
+    d.style.cssText = "position:fixed;left:12px;right:12px;bottom:14px;z-index:9999;background:#2B2433;color:#fff;border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:center;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.25);";
+    d.innerHTML = '<span style="flex:1">🔄 新しいバージョンがあります</span><button id="updBtn" style="background:#EE7561;color:#fff;border:none;border-radius:999px;padding:9px 14px;font-weight:700;">更新する</button>';
+    document.body.appendChild(d);
+    document.getElementById("updBtn").addEventListener("click", function(){ location.replace(location.pathname + "?v=" + Date.now()); });
+  }
+  function check(){
+    fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.text(); }).then(function(t){
+      var x = t.match(/name="app-build" content="([^"]+)"/); if (x && x[1] !== BUILD) bar();
+    }).catch(function(){});
+  }
+  setTimeout(check, 3000);
+  document.addEventListener("visibilitychange", function(){ if (!document.hidden) check(); });
 })();
 </script>
 </body>
