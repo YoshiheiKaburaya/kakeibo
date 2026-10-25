@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="20261025152501">
+<meta name="app-build" content="20261025200602">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -1447,7 +1447,8 @@
   function liabilitiesTotal(){ return data.liabilities.reduce(function(s,l){ return s + Number(l.amount||0); }, 0); }
   var assetScope = "全体";
   function inAssetScope(owner){ return assetScope === "全体" || owner === assetScope; }
-  function canSeeAsset(a){ return a.type === "投資（株式・投信）" || canSeeSplit(a.owner); }
+  function canSeeAsset(a){ return canSeeSplit(a.owner); }
+  function hiddenInvestSum(){ return data.assets.filter(function(a){ return inAssetScope(a.owner) && !canSeeAsset(a) && a.type === "投資（株式・投信）"; }).reduce(function(s,a){ return s + assetValue(a); }, 0); }
   function scopedAssets(){ return data.assets.filter(function(a){ return inAssetScope(a.owner) && canSeeAsset(a); }); }
   function hiddenAssetsSum(){ return data.assets.filter(function(a){ return inAssetScope(a.owner) && !canSeeAsset(a); }).reduce(function(s,a){ return s + assetValue(a); }, 0); }
   function hiddenAssetsCount(){ return data.assets.filter(function(a){ return inAssetScope(a.owner) && !canSeeAsset(a); }).length; }
@@ -1944,7 +1945,7 @@
   function renderInvestTable(){
     var cursor = navCursor;
     var isMonth = cursor.type === "month";
-    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）"; });
+    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && canSeeSplit(a.owner); });
     var el = document.getElementById("investTable");
     if (!invAssets.length) {
       el.innerHTML = '<p class="empty">資産タブで投資を登録すると、ここから積立を記録できます</p>';
@@ -2358,7 +2359,7 @@
     accSel.innerHTML = '<option value="">指定しない</option>' + accounts.map(function(a){ return '<option value="'+a.id+'">'+a.name+'</option>'; }).join("");
     if (accounts.some(function(a){ return a.id === accCur; })) accSel.value = accCur;
     if (isInvest) {
-      var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）"; });
+      var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && canSeeSplit(a.owner); });
       var sel = document.getElementById("fxInvestTarget");
       sel.innerHTML = invAssets.length
         ? invAssets.map(function(a){ return '<option value="'+a.id+'">'+a.name+(a._priv?' 🔒':'')+'</option>'; }).join("")
@@ -2722,7 +2723,7 @@
     var sLiabs = scopedLiabs();
     sAssets.forEach(function(a){ byType[a.type] = (byType[a.type]||0) + assetValue(a); });
     var hAS = hiddenAssetsSum(), hAC = hiddenAssetsCount(), hLS = hiddenLiabsSum(), hLC = hiddenLiabsCount();
-    if (hAC) byType["相手の資産（合計のみ）"] = hAS;
+    if (hAC) { var hI = hiddenInvestSum(); if (hI) byType["相手の投資（合計のみ）"] = hI; if (hAS - hI) byType["相手のその他（合計のみ）"] = hAS - hI; }
     var keys = Object.keys(byType).sort(function(a,b){ return byType[b]-byType[a]; });
     var bEl = document.getElementById("assetBreakdown");
     if (!keys.length) bEl.innerHTML = '<p class="empty">' + (data.assets.length ? '「' + assetScope + '」の資産はありません' : 'まだ資産が登録されていません') + '</p>';
@@ -2735,7 +2736,9 @@
     }
 
     var listEl = document.getElementById("assetsList");
-    var hiddenAssetRow = hAC ? ('<div class="row"><div class="rname"><span class="rtitle">相手の資産（合計のみ）</span><span class="rmeta">'+hAC+'件</span></div><span class="ramount">'+yen(hAS)+'</span></div>') : '';
+    var hiddenAssetRow = hAC ? ('<div class="row"><div class="rname"><span class="rtitle">相手の資産（合計）</span><span class="rmeta">内訳は表示されません</span></div><span class="ramount">'+yen(hAS)+'</span></div>'
+      + '<div class="row"><div class="rname"><span class="rtitle" style="font-weight:500;">└ うち投資</span></div><span class="ramount">'+yen(hiddenInvestSum())+'</span></div>'
+      + '<div class="row"><div class="rname"><span class="rtitle" style="font-weight:500;">└ うちそれ以外</span></div><span class="ramount">'+yen(hAS - hiddenInvestSum())+'</span></div>') : '';
     if (!sAssets.length) listEl.innerHTML = hiddenAssetRow || '<p class="empty">' + (data.assets.length ? '「' + assetScope + '」の資産はありません' : 'まだ資産が登録されていません') + '</p>';
     else {
       listEl.innerHTML = hiddenAssetRow + sAssets.map(function(a){
@@ -2846,7 +2849,7 @@
   function refreshSimAssetOptions(){
     var sel = document.getElementById("simAssetSelect");
     var current = sel.value;
-    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）"; });
+    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && canSeeSplit(a.owner); });
     sel.innerHTML = '<option value="__all__">投資資産の合計</option>'
       + invAssets.map(function(a){ return '<option value="'+a.id+'">'+a.name+'</option>'; }).join("")
       + '<option value="__manual__">手動で入力する</option>';
@@ -2856,7 +2859,7 @@
   document.getElementById("pullFromAssets").addEventListener("click", function(){
     var sel = document.getElementById("simAssetSelect").value;
     if (sel === "__manual__") return;
-    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）"; });
+    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && canSeeSplit(a.owner); });
     var target = sel === "__all__" ? invAssets : invAssets.filter(function(a){ return a.id === sel; });
     var total = target.reduce(function(s,a){ return s + assetValue(a); }, 0);
     var monthly = target.reduce(function(s,a){ return s + Number(a.monthlyContribution||0); }, 0);
@@ -2879,7 +2882,7 @@
 
   var simViewYears = null;
   function renderPerAssetSim(){
-    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && a.trackGain; });
+    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && a.trackGain && canSeeSplit(a.owner); });
     var listEl = document.getElementById("perAssetSimList");
     if (!invAssets.length) { listEl.innerHTML = '<p class="empty">投資資産がまだ登録されていません</p>'; return; }
     var yrBar = '<div class="scope-bar" id="simYearBar" style="margin-bottom:10px;">' + [5,10,15,20,25,30,40].map(function(y){ return '<button data-y="'+y+'"'+(simViewYears===y?' class="active"':'')+'>'+y+'年後</button>'; }).join("") + '</div>';
