@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="20261025200602">
+<meta name="app-build" content="1792994546">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -286,6 +286,49 @@
   .kp-key.op { color: var(--coral); } .kp-key.clr { color: var(--sub); }
   .kp-key.ok { grid-column: span 3; background: var(--coral); border-color: var(--coral); color: #fff; font-size: 17px; }
   #lgSubBar button { font-size: 12px; padding: 9px 2px; }
+
+  .kp-top { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .kp-top .kp-types { flex:1; margin-bottom:0; }
+  .kp-rcmini { margin:0; padding:8px 10px; white-space:nowrap; font-size:12px; }
+  .kp-line { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 2px; border-bottom:1px solid var(--line); min-height:38px; }
+  .kp-lab2 { font-size:12.5px; color:var(--sub); flex:0 0 auto; }
+  .kp-val { flex:1; display:flex; justify-content:flex-end; min-width:0; }
+  .kp-val input, .kp-val select { border:none; background:transparent; font-size:14px; font-weight:700; text-align:right; max-width:100%; color:inherit; font-family:inherit; }
+  .kp-val .kp-pills { max-width:230px; } .kp-val .kp-pill { padding:5px 4px; font-size:12.5px; }
+  .kp-catbtn { background:transparent; border:none; font-size:15px; font-weight:800; cursor:pointer; color:inherit; font-family:inherit; }
+  .kp-catgrid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; padding:8px 0; max-height:200px; overflow:auto; }
+  .kp-cg { background:var(--card); border:2px solid var(--line); border-radius:12px; padding:6px 2px; font-size:11px; font-weight:700; cursor:pointer; color:inherit; }
+  .kp-cg span { display:block; font-size:20px; } .kp-cg.on { border-color:var(--coral); background:#FFF1EE; }
+  .kp-quads4 { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin:6px 0 2px; }
+  .kp-quads4 .kp-pill { font-size:10.5px; padding:6px 1px; white-space:nowrap; }
+  .kp-pad { position:sticky; bottom:0; background:#2B2433; border-radius:16px; padding:8px 8px 10px; margin:8px -4px 0; z-index:4; }
+  .kp-pad .kp-amtbox { position:static; background:transparent; border:0; margin:0; padding:0; }
+  .kp-pad .kp-amount { color:#fff; font-size:34px; padding:0 4px; } .kp-pad .kp-yen { color:#B9B0C6; } .kp-pad .kp-calc { color:#B9B0C6; padding-bottom:4px; min-height:16px; }
+  .kp-pad .kp-keys { gap:5px; margin-top:4px; }
+  .kp-pad .kp-key { background:#3C3447; border:none; color:#fff; padding:11px 0; font-size:20px; border-radius:10px; }
+  .kp-pad .kp-key.op { color:#FFB4A9; } .kp-pad .kp-key.clr { color:#B9B0C6; }
+  .kp-pad .kp-key.ok { background:var(--coral); color:#fff; font-size:16px; }
+
+  #pane-ledger > .pane-title, #pane-ledger > .pane-note { display:none; }
+  .kp-quads4 .kp-pill { min-width:0; overflow:hidden; text-overflow:ellipsis; font-size:9.5px; padding:6px 0; }
+  .kp-pad .kp-key { padding:8px 0; font-size:18px; } .kp-pad .kp-amount { font-size:30px; padding:0 4px; }
+  .kp-pad .kp-keys { gap:4px; } .kp-pad { padding:6px 6px 8px; }
+
+  .kp-pair { display:flex; gap:10px; } .kp-pair .kp-line { flex:1; min-width:0; }
+  .kp-pair .kp-val select { width:100%; } .kp-pair .kp-val input[type=date] { width:100%; min-width:0; font-size:13px; }
+  .kp-line { min-height:32px; padding:3px 2px; } .kp-pair .kp-val .kp-pill { padding:4px 8px; }
+  #pane-ledger .card[data-lgsub-pane="input"] { padding:10px; }
+
+  .bs-wrap { display:flex; gap:0; border:2px solid #3b3a52; border-radius:6px; overflow:hidden; font-size:11.5px; }
+  .bs-col { flex:1; min-width:0; display:flex; flex-direction:column; background:#fff; }
+  .bs-col + .bs-col { border-left:2px solid #3b3a52; background:#EEF3FF; }
+  .bs-liab { background:#E6EEFF; } .bs-net { background:#C9D8FF; flex:0 0 auto; }
+  .bs-h { text-align:center; font-weight:800; font-size:13px; padding:6px 0 4px; }
+  .bs-sub { text-align:center; font-weight:700; padding:4px 0 2px; color:#4a4a63; }
+  .bs-r { display:flex; justify-content:space-between; gap:4px; padding:3px 6px; }
+  .bs-r span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; } .bs-r b { font-weight:700; white-space:nowrap; }
+  .bs-r.sum { border-top:1px solid #3b3a52; font-weight:800; } .bs-r.tot { border-top:2px solid #3b3a52; border-bottom:none; font-weight:800; background:rgba(0,0,0,.05); padding:6px; }
+  .bs-fill { flex:1; } .bs-none { text-align:center; color:var(--sub); padding:4px; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -327,7 +370,7 @@
     <section class="pane active" id="pane-ledger">
       <h2 class="pane-title">家計簿</h2>
       <div id="noticeBar"></div>
-      <div class="home-card" id="homeCard"></div>
+      
       <p class="pane-note">「カレンダー」で支払った日を確認、「入力」で電卓のように記録、「一覧」でカテゴリごとの確認、「グラフ」で内訳、「固定費」で毎月の固定費を登録できます。</p>
       <div class="scope-bar" id="lgSubBar"><button data-lgsub="calendar">カレンダー</button><button data-lgsub="input">入力</button><button data-lgsub="list">一覧</button><button data-lgsub="chart">グラフ</button><button data-lgsub="fixed">固定費</button></div>
       <div class="card accent-teal" data-lgsub-pane="calendar"><div id="calBody"></div></div>
@@ -349,16 +392,27 @@
         <div id="investTable"></div>
       </div>
 
-      <div class="card accent-lav" data-lgsub-pane="chart" id="reportCard"><div class="table-nav"><button class="ghost small" id="rpPrev">◀</button><div class="table-nav-label" id="rpLabel">📋 月の振り返り</div><button class="ghost small" id="rpNext">▶</button></div><div id="reportBody"></div></div>
-
-      <div class="card accent-sun" data-lgsub-pane="chart" id="budgetCard">
-        <h3>💰 月の予算</h3>
-        <p class="stat-sub" style="margin-bottom:8px;">家族の分と自分の分の予算を決められます。超えそうなときは、家計簿のトップで知らせます。</p>
-        <div class="scope-bar" id="budScopeBar"><button data-bs="家族">家族</button><button data-bs="夫">夫</button><button data-bs="妻">妻</button></div>
-        <label class="field"><span>1か月の予算の合計（円・空欄＝設定しない）</span><input type="number" id="budTotal" inputmode="numeric" placeholder="例）250000"></label>
-        <p class="stat-sub" style="margin:4px 0;">カテゴリごとの予算（任意）</p>
-        <div class="bd-grid" id="budCats"></div>
+      <div class="card" data-lgsub-pane="chart">
+        <h3>内訳（<span id="breakdownPeriodLabel">今月</span>）</h3>
+        <p class="stat-sub" style="margin-bottom:10px;">上の家計簿の表で月や年を切り替えると、ここもその期間に合わせて表示されます。</p>
+        <div class="scope-bar" style="margin-bottom:8px;">
+          <button data-bdscope="全体" class="active">全体</button>
+          <button data-bdscope="家族">家族</button>
+          <button data-bdscope="夫">夫</button>
+          <button data-bdscope="妻">妻</button>
+        </div>
+        <div class="scope-bar">
+          <button data-bdtype="expense" class="active">支出</button>
+          <button data-bdtype="income">収入</button>
+        </div>
+        <div id="bdSummary" style="margin-top:14px;"></div>
+        <div class="chart-box" style="height:230px; margin:10px 0 14px;"><canvas id="chartBreakdown"></canvas></div>
+        <div class="bar-list" id="expenseBreakdown"><p class="empty">まだ記録がありません</p></div>
+        <p class="stat-sub" id="breakdownHint" style="margin-top:8px;">カテゴリをタップすると、その中の小カテゴリ別に見られます。</p>
       </div>
+
+      <div class="card accent-lav" data-lgsub-pane="chart" id="reportCard"><div class="table-nav"><button class="ghost small" id="rpPrev">◀</button><div class="table-nav-label" id="rpLabel">📋 月の振り返り</div><button class="ghost small" id="rpNext">▶</button></div><div id="reportBody"></div></div>
+      <div class="card accent-teal" data-lgsub-pane="chart" id="plCard"><h3 id="plTitle">損益計算書（PL）</h3><p class="stat-sub">上の「振り返り」の月と連動します</p><div id="plBody"></div></div>
 
       <div class="card accent-sun" data-lgsub-pane="chart">
         <h3>今月の実質支出・精算</h3>
@@ -384,27 +438,17 @@
           <div class="ss-box"><div class="ss-label">年間支出</div><div class="ss-val" id="yearExpense">¥0</div></div>
         </div>
         <p class="stat-sub" id="yearBalance" style="margin-top:10px;">年間収支：¥0</p>
-        <div class="chart-box h180" style="margin-top:14px;"><canvas id="chartYear"></canvas></div>
-        <p class="stat-sub" style="margin-top:10px;">固定費は12ヶ月分、未来の予定として入力した支出・収入も含めて計算しています。</p>
+        <div style="display:none"><canvas id="chartYear"></canvas></div>
+        <p class="stat-sub" style="margin-top:10px;"></p>
       </div>
 
-      <div class="card" data-lgsub-pane="chart">
-        <h3>内訳（<span id="breakdownPeriodLabel">今月</span>）</h3>
-        <p class="stat-sub" style="margin-bottom:10px;">上の家計簿の表で月や年を切り替えると、ここもその期間に合わせて表示されます。</p>
-        <div class="scope-bar" style="margin-bottom:8px;">
-          <button data-bdscope="全体" class="active">全体</button>
-          <button data-bdscope="家族">家族</button>
-          <button data-bdscope="夫">夫</button>
-          <button data-bdscope="妻">妻</button>
-        </div>
-        <div class="scope-bar">
-          <button data-bdtype="expense" class="active">支出</button>
-          <button data-bdtype="income">収入</button>
-        </div>
-        <div id="bdSummary" style="margin-top:14px;"></div>
-        <div class="chart-box" style="height:230px; margin:10px 0 14px;"><canvas id="chartBreakdown"></canvas></div>
-        <div class="bar-list" id="expenseBreakdown"><p class="empty">まだ記録がありません</p></div>
-        <p class="stat-sub" id="breakdownHint" style="margin-top:8px;">カテゴリをタップすると、その中の小カテゴリ別に見られます。</p>
+      <div class="card accent-sun" data-lgsub-pane="chart" id="budgetCard">
+        <h3>💰 月の予算</h3>
+        <p class="stat-sub" style="margin-bottom:8px;">家族の分と自分の分の予算を決められます。超えそうなときは、家計簿のトップで知らせます。</p>
+        <div class="scope-bar" id="budScopeBar"><button data-bs="家族">家族</button><button data-bs="夫">夫</button><button data-bs="妻">妻</button></div>
+        <label class="field"><span>1か月の予算の合計（円・空欄＝設定しない）</span><input type="number" id="budTotal" inputmode="numeric" placeholder="例）250000"></label>
+        <p class="stat-sub" style="margin:4px 0;">カテゴリごとの予算（任意）</p>
+        <div class="bd-grid" id="budCats"></div>
       </div>
 
       <div class="card" data-lgsub-pane="list" style="display:none !important;"><h3>最近の記録（タップして編集）</h3><div id="ledgerList"><p class="empty">まだ記録がありません</p></div></div>
@@ -417,14 +461,6 @@
       <div class="card accent-lav">
         <h3>合計（月額）</h3>
         <div class="big-stat coral"><span class="num" id="fixedTotal">¥0</span></div>
-      </div>
-
-      <div class="card accent-sun">
-        <h3>家計管理 〜4つの敵〜</h3>
-        <p class="stat-sub" style="margin-bottom:12px;">支出を「固定費／変動費」×「毎月／不定期」の4つに分けて年間で見える化します。カテゴリごとの「不定期」設定は設定タブで変更できます。</p>
-        <label class="field"><span>基本給（額面年収・残業代/ボーナス除く・円）</span><input type="number" id="baseIncomeInput" placeholder="例）5000000" inputmode="numeric"></label>
-        <div class="quadrant-grid" id="quadrantGrid"></div>
-        <div class="settle-line" id="budgetLine" style="margin-top:4px;">基本給を入力すると、8割ラインとの比較が表示されます</div>
       </div>
 
       <div class="card">
@@ -452,6 +488,16 @@
       </div>
 
       <div class="card"><h3>固定費一覧</h3><div id="fixedList"><p class="empty">まだ固定費が登録されていません</p></div></div>
+
+      <div class="card accent-sun">
+        <h3>家計管理 〜4つの敵〜</h3>
+        <p class="stat-sub" style="margin-bottom:6px;">夫婦どちらが入力した支出・固定費も合算しています（相手の🔒非公開分は含まれません）。</p>
+        <p class="stat-sub" style="margin-bottom:12px;">支出を「固定費／変動費」×「毎月／不定期」の4つに分けて年間で見える化します。カテゴリごとの「不定期」設定は設定タブで変更できます。</p>
+        <label class="field"><span>基本給（額面年収・残業代/ボーナス除く・円）</span><input type="number" id="baseIncomeInput" placeholder="例）5000000" inputmode="numeric"></label>
+        <div class="quadrant-grid" id="quadrantGrid"></div>
+        <div class="settle-line" id="budgetLine" style="margin-top:4px;">基本給を入力すると、8割ラインとの比較が表示されます</div>
+      </div>
+
       </div>
     </section>
 
@@ -474,6 +520,7 @@
         <p class="stat-sub" style="margin-top:10px;">このアプリを開くたびに、その日の純資産が自動で下のグラフに記録されます。</p>
       </div>
 
+      <div class="card accent-lav" id="bsCard"><h3 id="bsTitle">貸借対照表（BS）</h3><div id="bsBody"></div></div>
       <div class="card"><h3>純資産の推移</h3><div class="chart-box h180"><canvas id="chartAssets"></canvas></div><p class="stat-sub" id="assetHistNote" style="margin-top:8px;"></p></div>
       <div class="card"><h3>資産の内訳</h3><div class="bar-list" id="assetBreakdown"><p class="empty">まだ資産が登録されていません</p></div></div>
 
@@ -512,7 +559,15 @@
               <label class="field"><span>元本（累計投資額・円）</span><input type="number" id="asPrincipal" placeholder="例）2000000" inputmode="numeric"></label>
               <div class="field"><span>評価損益（円・＋／−ボタンで選ぶ）</span><div class="gl-wrap" id="asGlWrap" data-neg="0"><div class="gl-row"><button type="button" class="gl-sign gl-plus on" data-neg="0">＋ 利益</button><button type="button" class="gl-sign gl-minus" data-neg="1">− 損失</button><input type="text" inputmode="numeric" autocomplete="off" id="asGainLoss" placeholder="例）50000"></div></div></div>
             </div>
-            <label class="field"><span>毎月の積立額（任意・シミュレーション用）</span><input type="number" id="asMonthlyContribution" placeholder="例）50000" inputmode="numeric"></label>
+            <label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="asDc"><span style="margin:0;">🏦 確定拠出年金（企業型DC・iDeCo）＝60歳まで引き出せない</span></label>
+            <div id="asDcWrap" style="display:none;">
+              <div class="grid-2">
+                <label class="field"><span>会社の拠出（月・円）</span><input type="number" id="asDcCompany" placeholder="例）37000" inputmode="numeric"></label>
+                <label class="field"><span>自分の拠出（月・円）</span><input type="number" id="asDcSelf" placeholder="例）18000" inputmode="numeric"></label>
+              </div>
+              <p class="stat-sub">合計が毎月の積立額になります。FIRE・必要保障額・貯金目標の「投資」には含めず、BSでは固定資産に入ります。</p>
+            </div>
+            <label class="field" id="asMcWrap"><span>毎月の積立額（任意・シミュレーション用）</span><input type="number" id="asMonthlyContribution" placeholder="例）50000" inputmode="numeric"></label>
             <div class="grid-2">
               <label class="field"><span>想定利回り（年率 %・シミュレーション用）</span><input type="number" id="asAssumedRate" value="5" step="0.1"></label>
               <label class="field"><span>積立を続ける年数（シミュレーション用）</span><input type="number" id="asSimYears" value="20"></label>
@@ -577,7 +632,7 @@
         <button class="primary" id="goalAdd">目標を追加</button>
       </div>
 
-      <div class="card"><h3>資産一覧</h3><div id="assetsList"><p class="empty">まだ資産が登録されていません</p></div></div>
+      <div class="card"><h3>資産一覧</h3><div class="scope-bar" id="assetKindBar"><button data-ak="all" class="active">すべて</button><button data-ak="invest">投資</button><button data-ak="other">それ以外</button></div><div id="assetsList"><p class="empty">まだ資産が登録されていません</p></div></div>
 
       <div class="card accent-coral">
         <h3>負債（借金）を追加</h3>
@@ -695,6 +750,10 @@
         <label class="field"><span>国民年金の納付予定月数（満額は480ヶ月＝40年）</span><input type="number" id="penKisoMonths" value="480" max="480"></label>
         <label class="field"><span>厚生年金の加入予定月数</span><input type="number" id="penKouseiMonths" value="360"></label>
         <label class="field"><span>厚生年金加入期間中の平均年収（円）</span><input type="number" id="penAvgIncome" value="5000000" inputmode="numeric"></label>
+        <div class="stat-sub" style="margin:6px 0 4px;font-weight:700;">🎓 学生納付特例・免除・追納（誰の年金かごとに保存）</div>
+        <label class="field"><span>免除・猶予を受けた期間（ヶ月）例）大学の学生納付特例＝24〜48</span><input type="number" id="penExempt" value="0" min="0" inputmode="numeric"></label>
+        <label class="field"><span>そのうち追納（あとから納付）した/する月数</span><input type="number" id="penBack" value="0" min="0" inputmode="numeric"></label>
+        <p class="stat-sub" id="penExNote" style="margin:0 0 8px;"></p>
         <button class="primary" id="penRun">試算する</button>
       </div>
       <div class="card">
@@ -1204,6 +1263,7 @@
         insLivAuto: settings.insLivAuto !== false,
         penAuto: settings.penAuto !== false,
         penWho: settings.penWho || "",
+        penEx: settings.penEx || {},
         insLivRatio: settings.insLivRatio || 70,
         templates: settings.templates || []
       }).catch(dbErr);
@@ -1250,7 +1310,7 @@
         var fpw = document.getElementById("fxPrivWrap"); if (fpw) fpw.style.display = "flex";
         var hc = document.getElementById("hiddenShareCard"), hk = document.getElementById("hiddenShareChk");
         if (hc && hk) {
-          hc.style.display = "";
+          hc.style.display = ""; hc.dataset.can = "1"; setTimeout(function(){ try { applySettingsGroup(); } catch(e){} }, 0);
           try { hk.checked = localStorage.getItem("kakeibo_hidden_share") !== "off"; } catch(e) { hk.checked = true; }
           hk.addEventListener("change", function(){
             try { localStorage.setItem("kakeibo_hidden_share", hk.checked ? "on" : "off"); } catch(e) {}
@@ -1362,6 +1422,7 @@
           if (s && typeof s.insLivAuto === "boolean") settings.insLivAuto = s.insLivAuto;
           if (s && typeof s.penAuto === "boolean") settings.penAuto = s.penAuto;
           if (s && typeof s.penWho === "string" && s.penWho) settings.penWho = s.penWho;
+          if (s && s.penEx && typeof s.penEx === "object") settings.penEx = s.penEx;
           if (s && typeof s.insLivRatio === "number") settings.insLivRatio = s.insLivRatio;
           settings.templates = (s && Array.isArray(s.templates)) ? clone(s.templates) : [];
         }
@@ -2483,7 +2544,7 @@
         var lockTag = f._priv ? '<span class="lock-tag">🔒非公開</span>' : '';
         var sign = f.type === "income" ? "+" : (f.type === "invest" ? "→" : "−");
         return '<div class="row">'
-          + '<div class="rname"><span class="rtitle">'+f.name+'</span><span class="rmeta">'+freqTxt+detail+accName+'</span></div>'
+          + '<div class="rname"><span class="rtitle">'+ownBadge(f.owner)+f.name+'</span><span class="rmeta">'+freqTxt+detail+accName+'</span></div>'
           + lockTag
           + '<span class="ramount '+(f.type==="invest"?"invest":f.type)+'">'+sign+yen(f.amount).replace("¥","")+'</span>'
           + '<span class="ractions"><button class="edit" data-id="'+f.id+'" title="編集">✎</button><button class="del" data-id="'+f.id+'" title="削除">×</button></span>'
@@ -2599,7 +2660,7 @@
         var glRaw = document.getElementById("asGainLoss").value.trim();
         var gl = glRaw === "" ? "" : readGl(document.getElementById("asGlWrap"));
         if (!pr && glRaw === "") return;
-        addAsset({ name: name, type: t, owner: document.getElementById("asOwnerInvest").value, trackGain: true, principal: pr||0, gainLoss: gl===""?0:Number(gl), monthlyContribution: Number(document.getElementById("asMonthlyContribution").value)||0, assumedRate: Number(document.getElementById("asAssumedRate").value)||5, simYears: Number(document.getElementById("asSimYears").value)||20, private: document.getElementById("asPrivate").checked });
+        addAsset({ name: name, type: t, owner: document.getElementById("asOwnerInvest").value, trackGain: true, principal: pr||0, gainLoss: gl===""?0:Number(gl), monthlyContribution: (document.getElementById("asDc").checked ? (Number(document.getElementById("asDcCompany").value)||0) + (Number(document.getElementById("asDcSelf").value)||0) : (Number(document.getElementById("asMonthlyContribution").value)||0)), dc: document.getElementById("asDc").checked, dcCompany: Number(document.getElementById("asDcCompany").value)||0, dcSelf: Number(document.getElementById("asDcSelf").value)||0, assumedRate: Number(document.getElementById("asAssumedRate").value)||5, simYears: Number(document.getElementById("asSimYears").value)||20, private: document.getElementById("asPrivate").checked });
         document.getElementById("asPrincipal").value = ""; document.getElementById("asGainLoss").value = ""; (function(){ var w = document.getElementById("asGlWrap"); w.dataset.neg = "0"; w.querySelectorAll(".gl-sign").forEach(function(x){ x.classList.toggle("on", x.dataset.neg === "0"); }); })(); document.getElementById("asMonthlyContribution").value = ""; document.getElementById("asAssumedRate").value = "5"; document.getElementById("asSimYears").value = "20";
       } else {
         var amt = Number(document.getElementById("asInvestAmount").value);
@@ -2657,7 +2718,9 @@
       return '<div class="edit-form">'
         + '<label class="field"><span>元本（累計投資額・円）</span><input type="number" class="ef-1" value="'+(a.principal||0)+'"></label>'
         + '<div class="field"><span>評価損益（円・＋／−ボタンで選ぶ）</span>' + glFieldHtml('class="ef-2"', gl) + '</div>'
-        + '<label class="field"><span>毎月の積立額（円）</span><input type="number" class="ef-3" value="'+(a.monthlyContribution||0)+'"></label>'
+        + '<label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="ef-dc"'+(a.dc?' checked':'')+'><span style="margin:0;">🏦 確定拠出年金（60歳まで引き出せない）</span></label>'
+        + '<div class="grid-2"><label class="field"><span>会社の拠出（月）</span><input type="number" class="ef-dcc" value="'+(a.dcCompany||0)+'"></label><label class="field"><span>自分の拠出（月）</span><input type="number" class="ef-dcs" value="'+(a.dcSelf||0)+'"></label></div>'
+        + '<label class="field"><span>毎月の積立額（円・DCの場合は上の合計が優先）</span><input type="number" class="ef-3" value="'+(a.monthlyContribution||0)+'"></label>'
         + '<label class="field"><span>想定利回り（年率%）</span><input type="number" class="ef-4" value="'+(a.assumedRate!==undefined?a.assumedRate:5)+'" step="0.1"></label>'
         + '<label class="field"><span>積立を続ける年数</span><input type="number" class="ef-5" value="'+(a.simYears!==undefined?a.simYears:20)+'"></label>'
         + '<div class="ef-btns"><button class="primary ef-save" data-id="'+a.id+'">保存</button><button class="ghost ef-cancel">キャンセル</button></div></div>';
@@ -2689,7 +2752,8 @@
         var v3 = Number(form.querySelector(".ef-3").value) || 0;
         var v4 = Number(form.querySelector(".ef-4").value);
         var v5 = Number(form.querySelector(".ef-5").value);
-        updateAsset(a.id, { principal: v1, gainLoss: v2, monthlyContribution: v3, assumedRate: isNaN(v4)?5:v4, simYears: isNaN(v5)?20:v5 });
+        var dcOn = form.querySelector(".ef-dc").checked, dcc = Number(form.querySelector(".ef-dcc").value)||0, dcs = Number(form.querySelector(".ef-dcs").value)||0;
+        updateAsset(a.id, { principal: v1, gainLoss: v2, dc: dcOn, dcCompany: dcc, dcSelf: dcs, monthlyContribution: dcOn ? dcc + dcs : v3, assumedRate: isNaN(v4)?5:v4, simYears: isNaN(v5)?20:v5 });
       } else if (a.mode === "car") {
         var v2c = Number(form.querySelector(".ef-2").value);
         updateAsset(a.id, { carMileage: v1, carResale: isNaN(v2c) ? 100 : v2c });
@@ -2721,7 +2785,7 @@
     var byType = {};
     var sAssets = scopedAssets();
     var sLiabs = scopedLiabs();
-    sAssets.forEach(function(a){ byType[a.type] = (byType[a.type]||0) + assetValue(a); });
+    sAssets.forEach(function(a){ var tk = a.dc ? "確定拠出年金（DC）" : a.type; byType[tk] = (byType[tk]||0) + assetValue(a); });
     var hAS = hiddenAssetsSum(), hAC = hiddenAssetsCount(), hLS = hiddenLiabsSum(), hLC = hiddenLiabsCount();
     if (hAC) { var hI = hiddenInvestSum(); if (hI) byType["相手の投資（合計のみ）"] = hI; if (hAS - hI) byType["相手のその他（合計のみ）"] = hAS - hI; }
     var keys = Object.keys(byType).sort(function(a,b){ return byType[b]-byType[a]; });
@@ -2755,7 +2819,7 @@
         else if (a.mode === "estate") { meta += " ・ " + a.buildingStructure + " ・ 土地¥" + Math.round(a.landValue||0).toLocaleString("ja-JP"); }
         var privBtn = canPrivate() ? ('<button class="priv-toggle" data-id="'+a.id+'" title="'+(a._priv?"配偶者に公開する":"配偶者に見えないようにする")+'">'+(a._priv?"🔓":"🔒")+'</button>') : '';
         return '<div class="row">'
-          + '<div class="rname"><span class="rtitle">'+a.name+'</span><span class="rmeta">'+meta+'</span></div>'
+          + '<div class="rname"><span class="rtitle">'+a.name+(a.dc ? ' <span class="lock-tag" style="background:#E8E4FF;color:#5b4bb5;">🏦DC・60歳まで</span>' : '')+'</span><span class="rmeta">'+meta+(a.dc && (a.dcCompany||a.dcSelf) ? ' ・ 会社'+yen(a.dcCompany||0)+'＋自分'+yen(a.dcSelf||0)+'/月' : '')+'</span></div>'
           + (a._priv ? '<span class="lock-tag">🔒非公開</span>' : '')
           + '<span class="owner-tag">'+a.owner+'</span>'
           + '<span class="ramount">'+yen(v)+'</span>'
@@ -2849,8 +2913,8 @@
   function refreshSimAssetOptions(){
     var sel = document.getElementById("simAssetSelect");
     var current = sel.value;
-    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && canSeeSplit(a.owner); });
-    sel.innerHTML = '<option value="__all__">投資資産の合計</option>'
+    var invAssets = simScoped().filter(function(a){ return canSeeSplit(a.owner); });
+    sel.innerHTML = '<option value="__all__">投資資産の合計（上で選んだ対象）</option>'
       + invAssets.map(function(a){ return '<option value="'+a.id+'">'+a.name+'</option>'; }).join("")
       + '<option value="__manual__">手動で入力する</option>';
     if ([].concat("__all__","__manual__",invAssets.map(function(a){return a.id;})).indexOf(current) !== -1) sel.value = current;
@@ -2859,12 +2923,17 @@
   document.getElementById("pullFromAssets").addEventListener("click", function(){
     var sel = document.getElementById("simAssetSelect").value;
     if (sel === "__manual__") return;
-    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && canSeeSplit(a.owner); });
-    var target = sel === "__all__" ? invAssets : invAssets.filter(function(a){ return a.id === sel; });
+    var invAssets = simScoped();
+    var target = sel === "__all__" ? invAssets : invAssets.filter(function(a){ return a.id === sel && canSeeSplit(a.owner); });
     var total = target.reduce(function(s,a){ return s + assetValue(a); }, 0);
     var monthly = target.reduce(function(s,a){ return s + Number(a.monthlyContribution||0); }, 0);
     document.getElementById("simInitial").value = Math.round(total);
     if (monthly > 0 || sel !== "__all__") document.getElementById("simMonthly").value = Math.round(monthly);
+    if (sel === "__all__" && total > 0) {
+      var wr = target.reduce(function(sm,a){ return sm + assetValue(a) * (a.assumedRate !== undefined ? a.assumedRate : 5); }, 0) / total;
+      document.getElementById("simRate").value = Math.round(wr * 10) / 10;
+      document.getElementById("simYears").value = simViewYears || 20;
+    }
     if (sel !== "__all__" && target.length === 1 && target[0].trackGain) {
       document.getElementById("simRate").value = target[0].assumedRate !== undefined ? target[0].assumedRate : 5;
       document.getElementById("simYears").value = target[0].simYears !== undefined ? target[0].simYears : 20;
@@ -2880,24 +2949,38 @@
     return balance;
   }
 
-  var simViewYears = null;
+  var simViewYears = null, simScope = "全体";
+  function simScoped(){ return data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && fireScopeMatch(simScope, a.owner); }); }
   function renderPerAssetSim(){
-    var invAssets = data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && a.trackGain && canSeeSplit(a.owner); });
+    var all = simScoped().filter(function(a){ return a.trackGain; });
+    var vis = all.filter(function(a){ return canSeeSplit(a.owner); }), hid = all.filter(function(a){ return !canSeeSplit(a.owner); });
     var listEl = document.getElementById("perAssetSimList");
-    if (!invAssets.length) { listEl.innerHTML = '<p class="empty">投資資産がまだ登録されていません</p>'; return; }
-    var yrBar = '<div class="scope-bar" id="simYearBar" style="margin-bottom:10px;">' + [5,10,15,20,25,30,40].map(function(y){ return '<button data-y="'+y+'"'+(simViewYears===y?' class="active"':'')+'>'+y+'年後</button>'; }).join("") + '</div>';
-    listEl.innerHTML = yrBar + invAssets.map(function(a){
-      var current = assetValue(a);
-      var rate = a.assumedRate !== undefined ? a.assumedRate : 5;
-      var years = simViewYears || (a.simYears !== undefined ? a.simYears : 20);
-      var monthly = a.monthlyContribution || 0;
-      var future = futureValueCalc(current, monthly, rate, years);
+    var scBar = '<div class="scope-bar" id="simScopeBar" style="margin-bottom:8px;">' + [["全体","夫婦合計"],["夫","夫"],["妻","妻"],["共通","家族"]].map(function(o){ return '<button data-sc="'+o[0]+'"'+(simScope===o[0]?' class="active"':'')+'>'+o[1]+'</button>'; }).join("") + '</div>';
+    var yrBar = '<div class="scope-bar" id="simYearBar" style="margin-bottom:10px; flex-wrap:wrap;">' + [5,10,15,20,25,30,40].map(function(y){ return '<button data-y="'+y+'"'+(simViewYears===y?' class="active"':'')+' style="flex:1 0 20%;">'+y+'年後</button>'; }).join("") + '</div>';
+    if (!all.length) { listEl.innerHTML = scBar + '<p class="empty">この対象の投資資産はありません</p>'; bindSimBars(listEl); return; }
+    var yearsOf = function(a){ return simViewYears || (a.simYears !== undefined ? a.simYears : 20); };
+    var calc = function(a){ var cur = assetValue(a), rate = a.assumedRate !== undefined ? a.assumedRate : 5, mo = Number(a.monthlyContribution||0); return { cur: cur, mo: mo, rate: rate, fut: futureValueCalc(cur, mo, rate, yearsOf(a)) }; };
+    var rows = vis.map(function(a){
+      var c = calc(a), years = yearsOf(a);
       return '<div class="row">'
-        + '<div class="rname"><span class="rtitle">'+a.name+'</span><span class="rmeta">現在'+yen(current)+' ・ 月々'+yen(monthly)+' ・ 年利'+rate+'% ・ '+years+'年後</span></div>'
-        + '<span class="ramount income">'+yen(future)+'</span>'
-        + '<button class="ghost small view-sim" data-id="'+a.id+'">詳しく見る</button>'
+        + '<div class="rname"><span class="rtitle">'+a.name+'</span><span class="rmeta">現在'+yen(c.cur)+' ・ 月々'+yen(c.mo)+' ・ 年利'+c.rate+'% ・ '+years+'年後</span></div>'
+        + '<span class="ramount income">'+yen(c.fut)+'</span>'
+        + '<button class="ghost small view-sim" data-id="'+a.id+'" style="white-space:nowrap;">詳しく</button>'
         + '</div>';
     }).join("");
+    if (hid.length) {
+      var hc = hid.map(calc), hCur = hc.reduce(function(s,x){ return s + x.cur; }, 0), hMo = hc.reduce(function(s,x){ return s + x.mo; }, 0), hFut = hc.reduce(function(s,x){ return s + x.fut; }, 0);
+      rows += '<div class="row"><div class="rname"><span class="rtitle">相手の投資（合計のみ）</span><span class="rmeta">現在'+yen(hCur)+' ・ 月々'+yen(hMo)+' ・ '+(simViewYears || "設定の")+'年後</span></div><span class="ramount income">'+yen(hFut)+'</span></div>';
+    }
+    var tc = all.map(calc), tCur = tc.reduce(function(s,x){ return s + x.cur; }, 0), tMo = tc.reduce(function(s,x){ return s + x.mo; }, 0), tFut = tc.reduce(function(s,x){ return s + x.fut; }, 0);
+    rows += '<div class="row" style="background:var(--sun-soft); border-radius:12px; padding:10px 8px;"><div class="rname"><span class="rtitle">合計（'+({"全体":"夫婦合計","夫":"夫","妻":"妻","共通":"家族"})[simScope]+'）</span><span class="rmeta">現在'+yen(tCur)+' ・ 月々'+yen(tMo)+(simViewYears ? ' ・ '+simViewYears+'年後' : ' ・ 各資産の設定年数')+'</span></div><span class="ramount income">'+yen(tFut)+'</span></div>';
+    listEl.innerHTML = scBar + yrBar + rows;
+    bindSimBars(listEl);
+  }
+  function bindSimBars(listEl){
+    listEl.querySelectorAll("#simScopeBar button").forEach(function(b){
+      b.addEventListener("click", function(){ simScope = b.dataset.sc; refreshSimAssetOptions(); renderPerAssetSim(); });
+    });
     listEl.querySelectorAll("#simYearBar button").forEach(function(b){
       b.addEventListener("click", function(){ var y = Number(b.dataset.y); simViewYears = (simViewYears === y) ? null : y; renderPerAssetSim(); });
     });
@@ -2965,7 +3048,7 @@
     var kind = settings.insAssetKind || "invest";
     var assets = data.assets.filter(function(a){ return fireScopeMatch(scope, a.owner); });
     var liabs = data.liabilities.filter(function(l){ return fireScopeMatch(scope, l.owner); });
-    var isInvest = function(a){ return a.type === "投資（株式・投信）"; };
+    var isInvest = function(a){ return a.type === "投資（株式・投信）" && !a.dc; };
     var isCash = function(a){ return a.type === "現金・預金"; };
     var base, label;
     if (kind === "invest") { base = assets.filter(isInvest); label = "投資"; }
@@ -3014,7 +3097,13 @@
     var kisoMonths = Math.min(480, Number(document.getElementById("penKisoMonths").value) || 0);
     var kouseiMonths = Number(document.getElementById("penKouseiMonths").value) || 0;
     var avgIncome = Number(document.getElementById("penAvgIncome").value) || 0;
-    var kiso = 816000 * (kisoMonths / 480);
+    var exM = Math.max(0, Math.min(kisoMonths, Number((document.getElementById("penExempt")||{}).value) || 0));
+    var bkM = Math.max(0, Math.min(exM, Number((document.getElementById("penBack")||{}).value) || 0));
+    var unpaidEx = exM - bkM;
+    // 納付した月＝1、未追納の免除月＝1/2（全額免除の年金額は国庫負担分のみ）、追納した月＝1
+    var kiso = 816000 * ((kisoMonths - unpaidEx + unpaidEx * 0.5) / 480);
+    var exNote = document.getElementById("penExNote");
+    if (exNote) exNote.textContent = exM ? ("免除" + exM + "ヶ月のうち未追納" + unpaidEx + "ヶ月は半額計算。追納すると満額扱いで年 約" + yen(816000 * unpaidEx * 0.5 / 480) + " 増えます。追納は10年以内・承認月から3年度目以降は加算金あり。") : "";
     var kousei = (avgIncome/12) * (5.481/1000) * kouseiMonths;
     var total = kiso + kousei;
     document.getElementById("penKisoOut").textContent = yen(kiso);
@@ -3023,6 +3112,10 @@
     document.getElementById("penMonthlyOut").textContent = "月額換算で約 " + yen(total/12);
   }
   document.getElementById("penRun").addEventListener("click", runPension);
+  function penExLoad(){ var w = document.getElementById("penWho").value, e = (settings.penEx||{})[w] || {}; document.getElementById("penExempt").value = e.ex || 0; document.getElementById("penBack").value = e.back || 0; }
+  function penExSave(){ var w = document.getElementById("penWho").value, m = Object.assign({}, settings.penEx||{}); m[w] = { ex: Number(document.getElementById("penExempt").value)||0, back: Number(document.getElementById("penBack").value)||0 }; updateFireSettings({ penEx: m }); }
+  ["penExempt","penBack"].forEach(function(i){ document.getElementById(i).addEventListener("change", function(){ penExSave(); runPension(); }); });
+
 
   // ---------- FIRE: 資産・家計簿との連動 ----------
   function fireScopeMatch(scope, owner){ return scope === "全体" || owner === scope; }
@@ -3050,7 +3143,7 @@
     var kind = settings.fireAssetKind || "invest_cash";
     var assets = data.assets.filter(function(a){ return fireScopeMatch(scope, a.owner); });
     var liabs = data.liabilities.filter(function(l){ return fireScopeMatch(scope, l.owner); });
-    var isInvest = function(a){ return a.type === "投資（株式・投信）"; };
+    var isInvest = function(a){ return a.type === "投資（株式・投信）" && !a.dc; };
     var isCash = function(a){ return a.type === "現金・預金"; };
     var base, label;
     if (kind === "invest") { base = assets.filter(isInvest); label = "投資"; }
@@ -3568,33 +3661,38 @@
     if (kp.sub && subs.indexOf(kp.sub) === -1) kp.sub = "";
     var accounts = linkableAccounts();
     var pill = function(attr, val, label, on, dis){ return '<button type="button" class="kp-pill'+(on?' on':'')+(dis?' dis':'')+'" data-'+attr+'="'+val+'"'+(dis?' disabled':'')+'>'+label+'</button>'; };
-    var html = '<div class="kp-types"><button data-kptype="expense" class="'+(kp.type==="expense"?'on':'')+'">支出</button><button data-kptype="income" class="'+(kp.type==="income"?'on':'')+'">収入</button></div>'
-      + '<div class="kp-rc"><label class="kp-rcbtn">📷 レシートから入力<input type="file" id="kpRcFile" accept="image/*" style="display:none"></label><span id="kpRcSt" class="stat-sub" style="margin:0;">'+rcStatus+'</span></div>'
+    var catIcon = function(n){ var m = [["食","🍚"],["日用","🧻"],["交通","🚃"],["住","🏠"],["家賃","🏠"],["光熱","💡"],["水道","💡"],["通信","📱"],["娯楽","🎮"],["衣","👕"],["美容","💄"],["医療","🏥"],["教育","📚"],["交際","🍻"],["保険","🛡️"],["税","🧾"],["趣味","🎨"],["自分","🙋"],["子","🧸"],["車","🚗"],["旅","✈️"],["給","💴"],["賞与","💴"],["ボーナス","💴"],["副業","💼"],["臨時","🎁"],["貯","🐖"],["投資","📈"]]; for (var q = 0; q < m.length; q++) if (n.indexOf(m[q][0]) !== -1) return m[q][1]; return "🏷️"; };
+    var line = function(lab, inner){ return '<div class="kp-line"><span class="kp-lab2">' + lab + '</span><div class="kp-val">' + inner + '</div></div>'; };
+    var accSel = '<select id="kpAcc"><option value="">指定しない</option>' + accounts.map(function(a){ return '<option value="'+a.id+'"'+(a.id===kp.account?' selected':'')+'>'+a.name+'</option>'; }).join("") + '</select>';
+    var html = '<div class="kp-top"><div class="kp-types"><button data-kptype="expense" class="'+(kp.type==="expense"?'on':'')+'">支出</button><button data-kptype="income" class="'+(kp.type==="income"?'on':'')+'">収入</button></div>'
+      + '<label class="kp-rcbtn kp-rcmini">📷 レシート<input type="file" id="kpRcFile" accept="image/*" style="display:none"></label></div>'
+      + (rcStatus ? '<div id="kpRcSt" class="stat-sub" style="margin:0 0 6px;">'+rcStatus+'</div>' : '<span id="kpRcSt"></span>')
       + kpChipsHtml()
-      + '<label class="field"><span>日付</span><input type="date" id="kpDate" value="'+kp.date+'"></label>'
-      + '<div class="kp-row"><span class="kp-lab">カテゴリ</span></div><div class="kp-cats">'+cats.map(function(c){ return pill("kpcat", c.name, c.name, c.name===kp.cat, false); }).join("")+'</div>'
-      + '<div class="kp-row"><span class="kp-lab">誰の分</span><div class="kp-pills">'
-        + [["共通","家族"],["夫","夫"],["妻","妻"]].map(function(o){ return pill("kpsplit", o[0], o[1], kp.split===o[0], !canEditSplit(o[0])); }).join("") + '</div></div>'
-      + (kp.type === "expense" ? '<div class="kp-row"><span class="kp-lab">払った人</span><div class="kp-pills">' + ["夫","妻"].map(function(o){ return pill("kppayer", o, o, kp.payer===o, false); }).join("") + '</div></div>' : '')
-      + (kp.type === "expense" ? ('<div class="kp-row" style="align-items:flex-start;"><span class="kp-lab">分類</span><div class="kp-quads">' + [1,2,3,4].map(function(q){ return pill("kpquad", q, QUAD_LABELS[q], Number(kp.quad || catQuad(catObj)) === q, false); }).join("") + '</div></div>') : '')
-      + '<button type="button" class="ghost small" id="kpMore" style=""margin:4px 0 8px;">'+(kp.more?'▾':'▸')+' さらに詳しく（小カテゴリ・口座・メモなど）</button>'
+      + '<div class="kp-pair">' + line("日付", '<input type="date" id="kpDate" value="'+kp.date+'">')
+      + line("カテゴリ", '<button type="button" class="kp-catbtn" data-kpcatopen="1">' + (kp.cat ? catIcon(kp.cat) + ' ' + kp.cat : '選択') + (kp.sub ? '・' + kp.sub : '') + ' ▾</button>') + '</div>'
+      + (kp.catOpen ? '<div class="kp-catgrid">' + cats.map(function(c){ return '<button type="button" class="kp-cg' + (c.name===kp.cat?' on':'') + '" data-kpcat="'+c.name+'"><span>'+catIcon(c.name)+'</span>'+c.name+'</button>'; }).join("") + '</div>' : '')
+      + '<div class="kp-pair">' + line(kp.type === "expense" ? "支出元" : "入金先", accSel)
+      + (kp.type === "expense" ? line("払う人", '<div class="kp-pills">' + ["夫","妻"].map(function(o){ return pill("kppayer", o, o, kp.payer===o, false); }).join("") + '</div>') : '') + '</div>'
+      + line("保存場所", '<div class="kp-pills">' + [["共通","家族"],["夫","夫"],["妻","妻"]].map(function(o){ return pill("kpsplit", o[0], o[1], kp.split===o[0], !canEditSplit(o[0])); }).join("") + '</div>')
+      + (kp.type === "expense" ? ('<div class="kp-quads4">' + [1,2,3,4].map(function(q){ return pill("kpquad", q, QUAD_LABELS[q], Number(kp.quad || catQuad(catObj)) === q, false); }).join("") + '</div>') : '')
+      + '<button type="button" class="ghost small" id="kpMore" style="margin:4px 0 6px;">'+(kp.more?'▾':'▸')+' さらに詳しく（小カテゴリ・メモなど）</button>'
       + (kp.more ? ('<div class="kp-more">'
         + '<label class="field"><span>小カテゴリ</span><select id="kpSubSel"><option value="">指定なし</option>'+subs.map(function(x){ return '<option value="'+x+'"'+(x===kp.sub?' selected':'')+'>'+x+'</option>'; }).join("")+'</select></label>'
-        + '<label class="field"><span>口座（選ぶと資産の金額を自動で増減・任意）</span><select id="kpAcc"><option value="">指定しない</option>'+accounts.map(function(a){ return '<option value="'+a.id+'"'+(a.id===kp.account?' selected':'')+'>'+a.name+'</option>'; }).join("")+'</select></label>'
         + '<label class="field"><span>メモ（任意）</span><input type="text" id="kpMemo" value="'+(kp.memo||"").replace(/"/g,"&quot;")+'" placeholder="例）スーパー"></label>'
         + (kp.type === "expense" ? ('<label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="kpWaste"'+(kp.waste?' checked':'')+'><span style="margin:0;">😅 無駄遣いだったかも</span></label>') : '')
         + (canPrivate() ? '<label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="kpPriv"'+(kp.priv?' checked':'')+'><span style="margin:0;">🔒 配偶者に見せない（自分だけ）</span></label>' : '')
         + '</div>') : '')
-      + '<div class="kp-amtbox"><div class="kp-amount"><span class="kp-yen">¥</span><span id="kpAmt">'+kpShow()+'</span></div><div class="kp-calc" id="kpSub">'+(/[÷×−+]/.test(kp.expr) ? ("＝ " + yen(kpCalc(kp.expr))) : "")+'</div></div>'
+      + '<div class="kp-pad"><div class="kp-amtbox"><div class="kp-amount"><span class="kp-yen">¥</span><span id="kpAmt">'+kpShow()+'</span></div><div class="kp-calc" id="kpSub">'+(/[÷×−+]/.test(kp.expr) ? ("＝ " + yen(kpCalc(kp.expr))) : "")+'</div></div>'
       + '<div class="kp-keys">'
-      + ["7","8","9","÷","4","5","6","×","1","2","3","−","C","0","00","+"].map(function(k){ return '<button type="button" class="kp-key'+("÷×−+".indexOf(k)>=0?' op':(k==="C"?' clr':''))+'" data-k="'+k+'">'+k+'</button>'; }).join("")
-      + '<button type="button" class="kp-key clr" data-k="⌫">⌫</button><button type="button" class="kp-key ok" id="kpOk">記録する</button></div>';
+      + ["7","8","9","⌫","4","5","6","÷","1","2","3","×","0","00","−","+"].map(function(k){ return '<button type="button" class="kp-key'+("÷×−+".indexOf(k)>=0?' op':(k==="⌫"?' clr':''))+'" data-k="'+k+'">'+k+'</button>'; }).join("")
+      + '<button type="button" class="kp-key clr" data-k="C">C</button><button type="button" class="kp-key ok" id="kpOk">OK　記録する</button></div></div>';
     el.innerHTML = html;
     el.querySelectorAll("[data-kptype]").forEach(function(b){ b.addEventListener("click", function(){ kp.type = b.dataset.kptype; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kpsplit]").forEach(function(b){ b.addEventListener("click", function(){ kp.split = b.dataset.kpsplit; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kppayer]").forEach(function(b){ b.addEventListener("click", function(){ kp.payer = b.dataset.kppayer; renderKeypad(); }); });
     el.querySelector("#kpDate").addEventListener("change", function(ev){ kp.date = ev.target.value; });
-    el.querySelectorAll("[data-kpcat]").forEach(function(b){ b.addEventListener("click", function(){ kp.cat = b.dataset.kpcat; kp.sub = ""; kp.quad = null; renderKeypad(); }); });
+    el.querySelectorAll("[data-kpcat]").forEach(function(b){ b.addEventListener("click", function(){ kp.cat = b.dataset.kpcat; kp.sub = ""; kp.quad = null; kp.catOpen = false; renderKeypad(); }); });
+    el.querySelectorAll("[data-kpcatopen]").forEach(function(b){ b.addEventListener("click", function(){ kp.catOpen = !kp.catOpen; renderKeypad(); }); });
     el.querySelector("#kpMore").addEventListener("click", function(){ kp.more = !kp.more; renderKeypad(); });
     var bind = function(id, fn, evn){ var x = el.querySelector(id); if (x) x.addEventListener(evn || "change", fn); };
     bind("#kpSubSel", function(ev){ kp.sub = ev.target.value; });
@@ -3620,7 +3718,7 @@
         c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
         c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url);
-        c.toBlob(function(b){ b ? resolve(b) : reject(new Error("resize")); }, "image/jpeg", 0.85);
+        c.toBlob(function(b){ b ? resolve(b) : reject(new Error("resize")); }, "image/jpeg", 0.92);
       };
       img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error("img")); };
       img.src = url;
@@ -3643,7 +3741,24 @@
     var store = ""; for (i = 0; i < Math.min(lines.length, 6); i++) { if (!/^[\d\s:\-\/年月日¥]+$/.test(lines[i]) && lines[i].length >= 2) { store = lines[i].slice(0, 20); break; } }
     return { total: total, date: date, store: store };
   }
+  var rcCands = [];
+  function rcMakeCands(r){
+    var c = [], add = function(l, v){ v = Math.round(Number(v)||0); if (v > 0 && v < 10000000 && !c.some(function(x){ return x.v === v; })) c.push({ l: l, v: v }); };
+    var items = Array.isArray(r.items) ? r.items : [], isum = items.reduce(function(s,x){ return s + (Number(x && x.price)||0); }, 0);
+    add("合計", r.total);
+    if (items.length > 1) add("品目の合計", isum);
+    if (Number(r.paid) > 0 && Number(r.change) >= 0 && Number(r.paid) > Number(r.change)) add("お預り−お釣り", Number(r.paid) - Number(r.change));
+    if (Number(r.subtotal) > 0 && Number(r.tax) > 0) add("小計＋税", Number(r.subtotal) + Number(r.tax));
+    add("小計", r.subtotal);
+    return c;
+  }
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest && ev.target.closest("[data-rccand]"); if (!b) return;
+    kp.expr = String(b.dataset.rccand); renderKeypad();
+  });
   function rcApply(r, cats){
+    rcCands = rcMakeCands(r);
+    if (rcCands.length) { r = Object.assign({}, r, { total: rcCands[0].v }); }
     if (r.total && isFinite(r.total) && r.total > 0) kp.expr = String(Math.round(r.total));
     if (r.date && /^\d{4}-\d{2}-\d{2}$/.test(r.date)) kp.date = r.date;
     if (r.store) kp.memo = String(r.store).slice(0, 30);
@@ -3651,15 +3766,17 @@
     kp.type = "expense"; kp.more = true;
   }
   async function rcRead(file){
-    var blob = await rcResize(file, 1400);
+    var blob = await rcResize(file, 2000);
     var own = splitLabel(kp.split || defaultSplitFor("")), cats = catsFor("expense", own);
     var sample = null; try { sample = await claude.use("sample"); } catch(e) {}
     if (sample) {
       try {
         var lim = sample.limits ? await sample.limits() : { images: true };
         if (lim && lim.images) {
-          var prompt = "これは日本のレシート（または領収書）の写真です。次のJSONだけを返してください。説明は不要です。\n{\"date\":\"YYYY-MM-DD または null\",\"total\":支払総額(税込・整数・不明なら0),\"store\":\"店名\",\"category\":\"下の候補から最も近いもの1つ。合わなければ空文字\"}\nカテゴリ候補：" + cats.map(function(c){ return c.name; }).join("、");
-          var res = await sample.json(prompt, { images: [blob], modelTier: "quick" });
+          var prompt = "これは日本のレシート（または領収書）の写真です。書かれている文字を注意深く読み、次のJSONだけを返してください（説明・コードブロック不要）。\n"
+            + "{\"date\":\"YYYY-MM-DD または null\",\"store\":\"店名\",\"total\":お客が実際に支払う税込の合計金額（「合計」「お会計」「お支払金額」「ご請求額」の数字。小計・税額・お預り・お釣り・ポイント・電話番号・登録番号T…の数字は絶対に使わない。整数・不明なら0）,\"subtotal\":小計(不明なら0),\"tax\":消費税額(不明なら0),\"paid\":お預り金額(不明なら0),\"change\":お釣り(不明なら0),\"items\":[{\"name\":\"品名\",\"price\":その行の税込金額(整数。値引きはマイナス)}],\"category\":\"下の候補から最も近いもの1つ。合わなければ空文字\"}\n"
+            + "注意：数字の桁を読み間違えないこと（カンマ区切りに注意）。内税/外税が混在する場合は最終的に支払う金額を total にする。\nカテゴリ候補：" + cats.map(function(c){ return c.name; }).join("、");
+          var res = await sample.json(prompt, { images: [blob], modelTier: "default", cache: false });
           return { r: res || {}, cats: cats, via: "Claude" };
         }
       } catch(e) { if (e && e.code === "not_granted") throw e; }
@@ -3678,7 +3795,7 @@
       try {
         var o = await rcRead(file);
         var before = kp.expr; rcApply(o.r, o.cats);
-        rcStatus = (kp.expr && kp.expr !== before) ? ("✅ " + o.via + "で読み取りました。内容を確認して「記録する」を押してください。") : "金額を読み取れませんでした。手入力してください。";
+        rcStatus = (kp.expr && kp.expr !== before) ? ((rcCands.length > 1 ? "⚠ 金額の候補が複数あります。合っているものを選んでください：" : "✅ " + o.via + "で読み取りました。金額を確認してください。") + (rcCands.length > 1 ? "<div style=\"display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;\">" + rcCands.map(function(c){ return "<button class=\"ghost small\" data-rccand=\"" + c.v + "\">" + c.l + " ¥" + c.v.toLocaleString("ja-JP") + "</button>"; }).join("") + "</div>" : "")) : "金額を読み取れませんでした。手入力してください。";
         renderKeypad();
       } catch(e) {
         rcStatus = (e && e.code === "not_granted") ? "Claudeの利用が許可されませんでした。" : "読み取りに失敗しました。通信状況を確認するか、手入力してください。";
@@ -3832,6 +3949,119 @@
     if (tips.length) h += '<div class="rp-tip">' + tips.join("<br>") + '</div>';
     body.innerHTML = h;
   }
+
+  // ===== PL / BS =====
+  function renderPL(){
+    var el = document.getElementById("plBody"); if (!el) return;
+    var mk = reportMonth || currentMonthKey();
+    document.getElementById("plTitle").textContent = "損益計算書（PL）" + mk.replace("-", "年") + "月";
+    var E = monthEntries(mk), inc = {}, fx = {}, vr = {}, hI = 0, hE = 0, tI = 0, tFx = 0, tVr = 0, hF = 0;
+    E.forEach(function(e){
+      var a = Number(e.amount||0), vis = !e._hidden && canSeeSplit(e.split), c = e.category || "その他";
+      if (e.type === "income") { tI += a; if (vis) inc[c] = (inc[c]||0) + a; else hI += a; }
+      else if (e.type === "expense") {
+        var isF = !!(e.fixed || e.fixedCostId);
+        if (isF) tFx += a; else tVr += a;
+        if (vis) { var t = isF ? fx : vr; t[c] = (t[c]||0) + a; } else { if (isF) hF += a; else hE += a; }
+      }
+    });
+    var R = function(l, v, cls){ return '<div class="bs-r' + (cls ? ' ' + cls : '') + '"><span>' + l + '</span><b>' + v + '</b></div>'; };
+    var rows = function(o){ return Object.keys(o).sort(function(a,b){ return o[b]-o[a]; }).map(function(k){ return R("　" + k, yen(o[k])); }).join(""); };
+    var bal = tI - tFx - tVr;
+    var h = '<div class="bs-wrap" style="flex-direction:column;"><div class="bs-col">'
+      + '<div class="bs-h">収益の部</div>' + rows(inc) + (hI ? R("　🔒 相手の非公開分", yen(hI)) : "") + R("収入合計", yen(tI), "sum")
+      + '<div class="bs-h">費用の部</div><div class="bs-sub" style="text-align:left;padding-left:6px;">固定費</div>' + rows(fx) + (hF ? R("　🔒 相手の非公開分", yen(hF)) : "") + R("固定費合計", yen(tFx), "sum")
+      + '<div class="bs-sub" style="text-align:left;padding-left:6px;">変動費</div>' + rows(vr) + (hE ? R("　🔒 相手の非公開分", yen(hE)) : "") + R("変動費合計", yen(tVr), "sum")
+      + R("費用合計", yen(tFx + tVr), "sum")
+      + R("当期収支（収入−費用）", (bal < 0 ? "−" : "+") + yen(Math.abs(bal)), "tot")
+      + '</div></div>';
+    el.innerHTML = h;
+  }
+  var _rpR = renderReport; renderReport = function(){ _rpR.apply(this, arguments); try { renderPL(); } catch(e){} };
+
+  function renderBS(){
+    var el = document.getElementById("bsBody"); if (!el) return;
+    document.getElementById("bsTitle").textContent = "貸借対照表（BS）" + (assetScope === "全体" ? "" : "・" + (assetScope === "共通" ? "家族" : assetScope));
+    var byT = {}, tA = 0;
+    scopedAssets().forEach(function(a){ var v = assetValue(a), tk = a.dc ? "確定拠出年金（DC）" : a.type; byT[tk] = (byT[tk]||0) + v; tA += v; });
+    var hI = hiddenInvestSum(), hS = hiddenAssetsSum(), hO = hS - hI;
+    var lbs = scopedLiabs(), tL = 0, lby = {};
+    lbs.forEach(function(l){ var v = Number(l.amount||0); tL += v; lby[l.name || l.type || "負債"] = (lby[l.name || l.type || "負債"]||0) + v; });
+    var hL = hiddenLiabsSum();
+    var allA = tA + hS, allL = tL + hL, net = allA - allL;
+    var R = function(l, v, cls){ return '<div class="bs-r' + (cls ? ' ' + cls : '') + '"><span>' + l + '</span><b>' + v + '</b></div>'; };
+    var H = function(t){ return '<div class="bs-h">' + t + '</div>'; };
+    var CUR = ["現金・預金", "投資（株式・投信）"], FIX = ["不動産", "車", "確定拠出年金（DC）", "年金・保険積立", "その他"];
+    var sumOf = function(ks){ return ks.reduce(function(s, k){ return s + (byT[k]||0); }, 0); };
+    var others = Object.keys(byT).filter(function(k){ return CUR.indexOf(k) < 0 && FIX.indexOf(k) < 0; });
+    var fixKeys = FIX.concat(others);
+    var curSum = sumOf(CUR) + hI, fixSum = sumOf(fixKeys) + hO;
+    var left = H("資産の部") + '<div class="bs-sub">流動資産</div>'
+      + CUR.filter(function(k){ return byT[k]; }).map(function(k){ return R(k, yen(byT[k])); }).join("")
+      + (hI ? R("🔒 相手の投資", yen(hI)) : "")
+      + R("流動資産合計", yen(curSum), "sum")
+      + '<div class="bs-sub">固定資産</div>'
+      + fixKeys.filter(function(k){ return byT[k]; }).map(function(k){ return R(k, yen(byT[k])); }).join("")
+      + (hO ? R("🔒 相手のその他", yen(hO)) : "")
+      + R("固定資産合計", yen(fixSum), "sum")
+      + '<div class="bs-fill"></div>' + R("資産合計", yen(allA), "tot");
+    var right = '<div class="bs-liab">' + H("負債の部")
+      + Object.keys(lby).sort(function(a,b){ return lby[b]-lby[a]; }).map(function(k){ return R(k, yen(lby[k])); }).join("")
+      + (hL ? R("🔒 相手の負債", yen(hL)) : "")
+      + (!Object.keys(lby).length && !hL ? '<div class="bs-none">負債なし</div>' : "")
+      + R("負債合計", yen(allL), "sum") + '</div>'
+      + '<div class="bs-net">' + H("純資産の部")
+      + R("純資産", (net < 0 ? "−" : "") + yen(Math.abs(net)))
+      + (allA > 0 ? R("自己資本比率", Math.round(net / allA * 100) + "%") : "")
+      + R("純資産合計", (net < 0 ? "−" : "") + yen(Math.abs(net)), "sum") + '</div>'
+      + '<div class="bs-fill"></div>' + R("負債＋純資産", yen(allL + net), "tot");
+    var h = '<div class="bs-wrap"><div class="bs-col">' + left + '</div><div class="bs-col">' + right + '</div></div>'
+      + '<p class="stat-sub" style="margin-top:8px;">左（資産）＝右（負債＋純資産）になります。流動資産＝すぐ使えるお金、固定資産＝不動産・車・年金積立など。</p>';
+    el.innerHTML = h;
+  }
+  var _raB = renderAssets; renderAssets = function(){ _raB.apply(this, arguments); try { renderBS(); } catch(e){} };
+
+  // ===== v18: 固定費の持ち主バッジ / 資産一覧の絞り込み / 設定のサブタブ =====
+  function ownBadge(o){
+    var k = (o === "夫" || o === "妻") ? o : "家族", col = { "家族": "#12B3A0", "夫": "#FF6B5B", "妻": "#8C7EDB" }[k];
+    return '<span style="display:inline-block;background:' + col + ';color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 7px;margin-right:6px;vertical-align:1px;">' + k + '</span>';
+  }
+  (function(){ var c = document.getElementById("asDc"); if (!c) return; c.addEventListener("change", function(){ document.getElementById("asDcWrap").style.display = c.checked ? "" : "none"; document.getElementById("asMcWrap").style.display = c.checked ? "none" : ""; }); })();
+  var assetKind = "all";
+  function applyAssetKind(){
+    var bar = document.getElementById("assetKindBar"); if (!bar) return;
+    bar.querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.ak === assetKind); });
+    document.querySelectorAll("#assetsList .row").forEach(function(r){
+      var eb = r.querySelector("button.edit"), id = eb && eb.dataset.id, a = id && data.assets.find(function(x){ return x.id === id; });
+      if (!a) { r.style.display = ""; return; }
+      var inv = a.type === "投資（株式・投信）";
+      r.style.display = (assetKind === "all" || (assetKind === "invest") === inv) ? "" : "none";
+    });
+  }
+  document.querySelectorAll("#assetKindBar button").forEach(function(b){ b.addEventListener("click", function(){ assetKind = b.dataset.ak; applyAssetKind(); }); });
+  var _raK = renderAssets; renderAssets = function(){ _raK.apply(this, arguments); try { applyAssetKind(); } catch(e){} };
+
+  var setGroup = "個人";
+  var SET_GROUPS = { "個人": ["プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "共有": ["夫婦での共有", "非公開分"], "データ": ["バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
+  function applySettingsGroup(){
+    var pane = document.getElementById("pane-settings"); if (!pane) return;
+    var bar = document.getElementById("setSubBar");
+    if (!bar) {
+      bar = document.createElement("div"); bar.className = "scope-bar"; bar.id = "setSubBar";
+      bar.innerHTML = Object.keys(SET_GROUPS).map(function(g){ return '<button data-sg="' + g + '">' + g + '</button>'; }).join("");
+      pane.insertBefore(bar, pane.children[1]);
+      bar.querySelectorAll("button").forEach(function(b){ b.addEventListener("click", function(){ setGroup = b.dataset.sg; applySettingsGroup(); }); });
+    }
+    bar.querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.sg === setGroup); });
+    Array.prototype.forEach.call(pane.children, function(c){
+      if (!c.classList.contains("card")) return;
+      var h = c.querySelector("h3"), t = h ? h.textContent : "", g = null;
+      Object.keys(SET_GROUPS).forEach(function(k){ if (SET_GROUPS[k].some(function(w){ return t.indexOf(w) !== -1; })) g = k; });
+      c.style.display = (g === null || g === setGroup) ? "" : "none";
+      if (c.id === "hiddenShareCard" && c.dataset.can !== "1") c.style.display = "none";
+    });
+  }
+  applySettingsGroup();
   document.getElementById("rpPrev").addEventListener("click", function(){ reportMonth = shiftMonthKey(reportMonth || currentMonthKey(), -1); renderReport(); });
   document.getElementById("rpNext").addEventListener("click", function(){ var c = currentMonthKey(); if ((reportMonth || c) < c) { reportMonth = shiftMonthKey(reportMonth, 1); renderReport(); } });
 
@@ -3930,7 +4160,7 @@
   function assetSumFor(scope, kind){
     var assets = data.assets.filter(function(a){ return fireScopeMatch(scope, a.owner); });
     var liabs = data.liabilities.filter(function(l){ return fireScopeMatch(scope, l.owner); });
-    var isInvest = function(a){ return a.type === "投資（株式・投信）"; }, isCash = function(a){ return a.type === "現金・預金"; };
+    var isInvest = function(a){ return a.type === "投資（株式・投信）" && !a.dc; }, isCash = function(a){ return a.type === "現金・預金"; };
     var base = kind === "invest" ? assets.filter(isInvest) : (kind === "invest_cash" ? assets.filter(function(a){ return isInvest(a) || isCash(a); }) : assets);
     var sum = base.reduce(function(s,a){ return s + assetValue(a); }, 0);
     if (kind === "net") sum -= liabs.reduce(function(s,l){ return s + Number(l.amount||0); }, 0);
@@ -4046,7 +4276,7 @@
   function applyPensionAuto(){
     var chk = document.getElementById("penAuto"); if (!chk) return;
     var auto = settings.penAuto !== false; chk.checked = auto;
-    var who = settings.penWho || myRole(); document.getElementById("penWho").value = who;
+    var who = settings.penWho || myRole(); if (document.getElementById("penWho").value !== who || !document.getElementById("penWho").dataset.l) { document.getElementById("penWho").value = who; document.getElementById("penWho").dataset.l = "1"; penExLoad(); }
     var ids = ["penKisoMonths","penKouseiMonths","penAvgIncome","wpAvgIncome"], info = document.getElementById("penAutoInfo");
     if (!auto) { ids.forEach(function(i){ document.getElementById(i).readOnly = false; }); info.textContent = "自動計算はオフです。手入力してください。"; return; }
     var n = [], a = ageOf(birthOf(who));
@@ -4066,7 +4296,7 @@
     info.innerHTML = n.join("<br>");
   }
   document.getElementById("penAuto").addEventListener("change", function(){ updateFireSettings({ penAuto: this.checked }); runPension(); try { runWidowPension(); } catch(e) {} });
-  document.getElementById("penWho").addEventListener("change", function(){ updateFireSettings({ penWho: this.value }); runPension(); });
+  document.getElementById("penWho").addEventListener("change", function(){ updateFireSettings({ penWho: this.value }); penExLoad(); runPension(); });
   var _runPensionBase = runPension;
   runPension = function(){ try { applyPensionAuto(); } catch(e) { console.error(e); } _runPensionBase(); };
   var _runWidowBase = runWidowPension;
