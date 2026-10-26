@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793013165">
+<meta name="app-build" content="1793049061">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -383,6 +383,7 @@
       <div class="card accent-teal" data-lgsub-pane="calendar"><div id="calBody"></div></div>
       <div class="card accent-coral" data-lgsub-pane="input"><div id="kpBody"></div></div>
 
+      <div class="card" data-lgsub-pane="list" id="searchCard"><label class="field" style="margin:0;"><span>🔍 記録を検索（メモ・カテゴリ・金額・日付）</span><input type="search" id="lgSearch" placeholder="例）スタバ、ガソリン、1200、2026-10"></label><div id="lgSearchOut"></div></div>
       <div class="card accent-coral" data-lgsub-pane="list">
         <div class="table-nav">
           <button class="ghost small" id="lgMonthPrev">◀</button>
@@ -444,6 +445,7 @@
           <div class="ss-box"><div class="ss-label">年間支出</div><div class="ss-val" id="yearExpense">¥0</div></div>
         </div>
         <p class="stat-sub" id="yearBalance" style="margin-top:10px;">年間収支：¥0</p>
+        <p class="stat-sub" id="yearForecast" style="margin-top:4px;"></p>
         <div style="display:none"><canvas id="chartYear"></canvas></div>
         <p class="stat-sub" style="margin-top:10px;"></p>
       </div>
@@ -468,6 +470,8 @@
         <h3>合計（月額）</h3>
         <div class="big-stat coral"><span class="num" id="fixedTotal">¥0</span></div>
       </div>
+
+      <div class="card" id="setAsideCard"><h3>🐖 年1回の支出の積立目安</h3><div id="setAsideBody"></div></div>
 
       <div class="card">
         <h3>固定費を追加</h3>
@@ -527,6 +531,7 @@
       </div>
 
       <div class="card accent-lav" id="bsCard"><h3 id="bsTitle">貸借対照表（BS）</h3><div id="bsBody"></div></div>
+      <div class="card" id="nwCard"><h3>📈 純資産の変化</h3><div id="nwBody"></div></div>
       <div class="card"><h3>純資産の推移</h3><div class="chart-box h180"><canvas id="chartAssets"></canvas></div><p class="stat-sub" id="assetHistNote" style="margin-top:8px;"></p></div>
       <div class="card"><h3>資産の内訳</h3><div class="bar-list" id="assetBreakdown"><p class="empty">まだ資産が登録されていません</p></div></div>
 
@@ -784,6 +789,7 @@
           <label class="field"><span>対象</span><select id="fireScope"><option value="全体">夫婦合計</option><option value="夫">夫</option><option value="妻">妻</option><option value="共通">家族</option></select></label>
           <label class="field"><span>資産額に含めるもの</span><select id="fireAssetKind"><option value="invest_cash">現金・預金＋投資</option><option value="invest">投資のみ</option><option value="net">純資産全体</option></select></label>
         </div>
+        <label class="field"><span>年間支出の出し方</span><select id="fireSpendBasis"><option value="pace">今年のペースで年換算</option><option value="avg3y">過去3年の平均（記録がある月だけ）</option></select></label>
         <button class="ghost" id="fireSyncBtn" style="width:100%; display:none; margin-bottom:8px;">今すぐ反映する</button>
         <p class="stat-sub" id="fireSyncInfo">資産・家計簿のデータを読み込み中…</p>
       </div>
@@ -864,7 +870,7 @@
       <div class="card accent-lav" id="subBulkCard">
         <h3>小カテゴリの一括設定</h3>
         <p class="stat-sub" style="margin-bottom:10px;">1行に1カテゴリ、「カテゴリ名：小カテゴリ、小カテゴリ…」の形で書いて「反映する」を押すと、まとめて登録・更新できます。家計簿の入力画面では、ここで決めたものから選ぶ形になります。</p>
-        <label class="field"><span>どの大カテゴリの中・小カテゴリを編集する？</span><select id="subTargetSel"><option value="共通">全員共通（初期値）</option><option value="家族">家族だけ</option><option value="夫">夫だけ</option><option value="妻">妻だけ</option></select></label>
+        <label class="field"><span>どの大カテゴリの中・小カテゴリを編集する？</span><select id="subTargetSel"><option value="家族">家族だけ</option><option value="夫">夫だけ</option><option value="妻">妻だけ</option></select></label>
         <p class="stat-sub" id="subTargetNote" style="margin:-4px 0 10px;"></p>
         <label class="field"><span>支出</span><textarea id="subBulkExpense" rows="9" placeholder="食費：スーパー、外食、コンビニ"></textarea></label>
         <label class="field"><span>収入</span><textarea id="subBulkIncome" rows="5" placeholder="給料：本業、副業先"></textarea></label>
@@ -873,7 +879,7 @@
       </div>
       <div class="card">
         <h3>カテゴリ管理</h3>
-        <label class="field"><span>編集する大カテゴリ</span><select id="catTargetSel"><option value="共通">全員共通（初期値）</option><option value="家族">家族だけ</option><option value="夫">夫だけ</option><option value="妻">妻だけ</option></select></label>
+        <label class="field"><span>編集する大カテゴリ</span><select id="catTargetSel"><option value="家族">家族だけ</option><option value="夫">夫だけ</option><option value="妻">妻だけ</option></select></label>
         <p class="stat-sub" id="catTargetNote" style="margin-bottom:10px;">支出・収入の中カテゴリと小カテゴリ（カンマ区切り）を編集できます。</p>
         <div id="catSettingsExpense"></div>
         <div class="grid-2" style="margin-top:6px;">
@@ -1099,8 +1105,8 @@
     delete entry.private;
     entry.by = entry.by || myRole(); entry.at = entry.at || Date.now();
     if (!priv) logChange("add", entry);
-    if (synced) { (priv ? privateLedgerCol() : db.collection("ledger")).add(entry).then(function(){ if (onOk) onOk(); }, dbErr); }
-    else { entry.id = uid(); data.ledger.push(entry); saveLocal(); renderAll(); if (onOk) onOk(); }
+    if (synced) { (priv ? privateLedgerCol() : db.collection("ledger")).add(entry).then(function(ref){ if (onOk) onOk(ref && ref.id); }, dbErr); }
+    else { entry.id = uid(); data.ledger.push(entry); saveLocal(); renderAll(); if (onOk) onOk(entry.id); }
     if (entry.accountId) adjustAsset(entry.accountId, cashSign(entry.type) * entry.amount);
     if (entry.type === "invest" && entry.targetAssetId) adjustInvestmentAsset(entry.targetAssetId, entry.amount);
   }
@@ -1258,6 +1264,7 @@
         catsBy: settings.catsBy || {},
         baseIncome: settings.baseIncome || 0,
         fireScope: settings.fireScope || "全体",
+        fireSpendBasis: settings.fireSpendBasis || "pace",
         fireAssetKind: settings.fireAssetKind || "invest_cash",
         fireAutoSync: settings.fireAutoSync !== false,
         insAutoSync: settings.insAutoSync !== false,
@@ -1417,6 +1424,7 @@
             document.getElementById("baseIncomeInput").value = settings.baseIncome || "";
           }
           if (s && typeof s.fireScope === "string") settings.fireScope = s.fireScope;
+          if (s && typeof s.fireSpendBasis === "string") settings.fireSpendBasis = s.fireSpendBasis;
           if (s && typeof s.fireAssetKind === "string") settings.fireAssetKind = s.fireAssetKind;
           if (s && typeof s.fireAutoSync === "boolean") settings.fireAutoSync = s.fireAutoSync;
           if (s && typeof s.insAutoSync === "boolean") settings.insAutoSync = s.insAutoSync;
@@ -2230,7 +2238,7 @@
         h += '<div class="settle-btns">' + (Math.abs(rem) >= 1 ? '<button class="primary small" id="settleDo">この分も精算した</button>' : '') + '<button class="ghost small" id="settleUndo">取り消す</button></div>';
         settleEl.innerHTML = h;
       } else if (Math.abs(diff) < 1) settleEl.innerHTML = "現時点での立て替えの差はありません";
-      else settleEl.innerHTML = dirTxt(diff) + "　の精算目安" + '<div class="settle-btns"><button class="primary small" id="settleDo">精算した（記録する）</button></div>';
+      else settleEl.innerHTML = (diff > 0 ? "今月は夫が多く払っています。" : "今月は妻が多く払っています。") + "<br>" + dirTxt(diff) + "　を渡せば精算OK" + '<div class="settle-btns"><button class="primary small" id="settleDo">精算した（記録する）</button></div>';
       var sd = document.getElementById("settleDo"), su = document.getElementById("settleUndo");
       if (sd) sd.addEventListener("click", function(){ settings.settled = Object.assign({}, settings.settled); settings.settled[mk] = { diff: Math.round(diff), date: todayStr(), by: myRole() }; persistSettings(); renderLedger(); showToast("精算済みにしました"); });
       if (su) su.addEventListener("click", function(){ settings.settled = Object.assign({}, settings.settled); delete settings.settled[mk]; persistSettings(); renderLedger(); });
@@ -3144,7 +3152,26 @@
 
   // ---------- FIRE: 資産・家計簿との連動 ----------
   function fireScopeMatch(scope, owner){ return scope === "全体" || owner === scope; }
+  var spendAvgInfo = "";
+  function avgSpendMonths(){
+    var now = new Date(), cur = currentMonthKey(), first = null;
+    data.ledger.forEach(function(e){ if (e.date && e.type === "expense" && (first === null || e.date.slice(0,7) < first)) first = e.date.slice(0,7); });
+    if (!first) return [];
+    var keys = [], k = shiftMonthKey(cur, -1);
+    for (var i = 0; i < 36 && k >= first; i++) { keys.push(k); k = shiftMonthKey(k, -1); }
+    return keys;
+  }
+  function annualSpendAvg(scope){
+    var keys = avgSpendMonths(); if (!keys.length) return null;
+    var pseudo = [];
+    keys.forEach(function(mk){ monthEntries(mk).forEach(function(e){ if (e.type === "expense") pseudo.push({ type: "expense", amount: Number(e.amount||0) * 12 / keys.length, split: e.split || "共通" }); }); });
+    spendAvgInfo = keys.length + "ヶ月分（" + keys[keys.length-1].replace("-","年") + "月〜" + keys[0].replace("-","年") + "月）";
+    if (scope === "夫" || scope === "妻") return personalEffective(pseudo, scope);
+    return pseudo.reduce(function(s,e){ return (scope === "全体" || e.split === "共通") ? s + e.amount : s; }, 0);
+  }
   function annualSpendEstimate(scope){
+    if (settings.fireSpendBasis === "avg3y") { var av = annualSpendAvg(scope); if (av !== null && av > 0) return av; }
+    spendAvgInfo = "";
     var now = new Date();
     var year = String(now.getFullYear());
     var monthsElapsed = now.getMonth() + 1;
@@ -3190,7 +3217,7 @@
     setField("fireAssets", r.assets, r.hasAssets);
     notes.push(r.hasAssets ? "現在の資産額：" + r.label + " " + yen(r.assets) + "（対象：" + r.scope + "）" : "資産が未登録のため、現在の資産額は手入力の値を使っています");
     setField("fireSpend", r.spend, r.spend > 0);
-    notes.push(r.spend > 0 ? "年間支出：" + yen(r.spend) + "（固定費＋今年の変動費を年換算）" : "支出の記録がないため、年間支出は手入力の値を使っています");
+    notes.push(r.spend > 0 ? "年間支出：" + yen(r.spend) + (spendAvgInfo ? "（過去の平均：" + spendAvgInfo + "の月平均×12。記録が3年に満たない場合は、ある分だけで計算）" : "（固定費＋今年の変動費を年換算）") : "支出の記録がないため、年間支出は手入力の値を使っています");
     setField("fireSave", r.save, r.save > 0);
     notes.push(r.save > 0 ? "年間積立：" + yen(r.save) + "（投資資産の毎月積立額×12）" : "投資資産に毎月の積立額を入れると年間積立に反映されます");
     document.getElementById("fireSyncInfo").innerHTML = notes.join("<br>");
@@ -3199,6 +3226,7 @@
     var auto = settings.fireAutoSync !== false;
     document.getElementById("fireAutoSync").checked = auto;
     document.getElementById("fireScope").value = settings.fireScope || "全体";
+    document.getElementById("fireSpendBasis").value = settings.fireSpendBasis || "pace";
     document.getElementById("fireAssetKind").value = settings.fireAssetKind || "invest_cash";
     document.getElementById("fireSyncBtn").style.display = auto ? "none" : "block";
     if (!auto) {
@@ -3216,6 +3244,7 @@
     runFireWithSync();
   });
   document.getElementById("fireScope").addEventListener("change", function(){ updateFireSettings({ fireScope: this.value }); runFireWithSync(); });
+  document.getElementById("fireSpendBasis").addEventListener("change", function(){ updateFireSettings({ fireSpendBasis: this.value }); runFireWithSync(); });
   document.getElementById("fireAssetKind").addEventListener("change", function(){ updateFireSettings({ fireAssetKind: this.value }); runFireWithSync(); });
   document.getElementById("fireSyncBtn").addEventListener("click", function(){ syncFireFromData(); runFire(); });
 
@@ -3259,7 +3288,7 @@
     var arr = String(text).split(/[,，、]/).map(function(t){ return t.trim(); }).filter(Boolean);
     return arr.filter(function(v,i){ return arr.indexOf(v) === i; });
   }
-  var subTarget = "共通";
+  var subTarget = "家族";
   function kindKey(kind){ return kind === "income" ? "income" : "expense"; }
   // いま編集中の大（共通／家族／夫／妻）の一覧。まだ別にしていなければ全員共通の一覧を見せる。
   function listForTarget(kind){
@@ -3509,6 +3538,14 @@
   }
   document.getElementById("dupFindBtn").addEventListener("click", renderDupList);
 
+  function showUndoToast(msg, undo){
+    var t = document.createElement("div"); t.className = "toast show"; t.style.pointerEvents = "auto"; t.style.display = "flex"; t.style.alignItems = "center"; t.style.gap = "12px";
+    var sp = document.createElement("span"); sp.textContent = msg;
+    var b = document.createElement("button"); b.textContent = "取り消す"; b.style.cssText = "background:#fff;color:#2B2433;border:none;border-radius:999px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer;";
+    var gone = false, rm = function(){ if (gone) return; gone = true; t.classList.remove("show"); setTimeout(function(){ t.remove(); }, 300); };
+    b.addEventListener("click", function(){ try { undo(); } catch(e) {} rm(); showToast("取り消しました"); });
+    t.appendChild(sp); t.appendChild(b); document.body.appendChild(t); setTimeout(rm, 6500);
+  }
   function showToast(msg){
     var t = document.createElement("div");
     t.className = "toast";
@@ -3665,12 +3702,14 @@
     var catObj = cats.find(function(c){ return c.name === kp.cat; });
     var q = kp.quad || catQuad(catObj);
     var saved = { cat: kp.cat, type: kp.type };
-    addLedger({
+    var kpPriv = !!kp.priv && canPrivate();
+    var kpEnt = {
       date: kp.date || todayStr(), type: kp.type, category: kp.cat, subcategory: kp.sub || "", amount: val,
       split: kp.split, payer: kp.type === "expense" ? kp.payer : "",
       wasteful: kp.type === "expense" && !!kp.waste, quadrant: kp.type === "expense" ? Number(q) : undefined,
       accountId: kp.account || "", private: !!kp.priv, memo: (kp.memo || "").trim()
-    }, function(){ showToast(saved.cat + " " + yen(val) + " を記録しました"); });
+    };
+    addLedger(kpEnt, function(id){ if (!id) { showToast(saved.cat + " " + yen(val) + " を記録しました"); return; } var snap = Object.assign({}, kpEnt, { id: id, _priv: kpPriv }); showUndoToast(saved.cat + " " + yen(val) + " を記録しました", function(){ deleteLedger(snap); }); });
     kp.expr = ""; kp.memo = ""; kp.waste = false; kp.quad = null; rcStatus = "";
     renderKeypad();
   }
@@ -3692,6 +3731,7 @@
     var accSel = '<select id="kpAcc"><option value="">指定しない</option>' + accounts.map(function(a){ return '<option value="'+a.id+'"'+(a.id===kp.account?' selected':'')+'>'+a.name+'</option>'; }).join("") + '</select>';
     var html = '<div class="kp-top"><div class="kp-types"><button data-kptype="expense" class="'+(kp.type==="expense"?'on':'')+'">支出</button><button data-kptype="income" class="'+(kp.type==="income"?'on':'')+'">収入</button></div>'
       + '<label class="kp-rcbtn kp-rcmini">📷 レシート<input type="file" id="kpRcFile" accept="image/*" style="display:none"></label></div>'
+      + budSlimHtml()
       + (rcStatus ? '<div id="kpRcSt" class="stat-sub" style="margin:0 0 6px;">'+rcStatus+'</div>' : '<span id="kpRcSt"></span>')
       + '<div class="kp-pair">' + line("日付", '<input type="date" id="kpDate" value="'+kp.date+'"><button type="button" class="ghost small" id="kpToday" style="margin:0 0 0 4px;padding:3px 8px;">今日</button>')
       + line("カテゴリ", '<button type="button" class="kp-catbtn" data-kpcatopen="1">' + (kp.cat ? catIcon(kp.cat) + ' ' + kp.cat : '選択') + (kp.sub ? '・' + kp.sub : '') + ' ▾</button>') + '</div>'
@@ -4068,7 +4108,7 @@
   var _raK = renderAssets; renderAssets = function(){ _raK.apply(this, arguments); try { applyAssetKind(); } catch(e){} };
 
   var setGroup = "個人";
-  var SET_GROUPS = { "個人": ["プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "共有": ["夫婦での共有", "非公開分"], "データ": ["バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
+  var SET_GROUPS = { "個人": ["プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "共有": ["夫婦での共有", "非公開分"], "データ": ["バージョン", "バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
   function applySettingsGroup(){
     var pane = document.getElementById("pane-settings"); if (!pane) return;
     var bar = document.getElementById("setSubBar");
@@ -4089,6 +4129,114 @@
   }
   applySettingsGroup();
   document.getElementById("rpToday").addEventListener("click", function(){ reportMonth = currentMonthKey(); renderReport(); });
+
+  // ===== v29 =====
+  function budSlimHtml(){
+    var mk = currentMonthKey(), scopes = ["家族", myRole()].filter(function(v,i,a){ return a.indexOf(v) === i; }), h = "";
+    scopes.forEach(function(sc){
+      var b = budgetOf(sc); if (!b || !b.total) return;
+      var sp = spentFor(sc, mk), pct = Math.round(sp / b.total * 100), rest = b.total - sp;
+      h += '<div style="display:flex;align-items:center;gap:8px;font-size:11.5px;margin:2px 0;"><span style="flex:0 0 auto;color:var(--sub);">' + sc + '予算</span><div class="hm-bar" style="flex:1;margin:0;"><div class="hm-fill ' + (pct >= 100 ? "over" : (pct >= 80 ? "warn" : "")) + '" style="width:' + Math.min(100, pct) + '%"></div></div><b style="flex:0 0 auto;">' + (rest >= 0 ? "残り" + yen(rest) : "超過" + yen(-rest)) + '</b></div>';
+    });
+    return h;
+  }
+  function renderSearch(){
+    var inp = document.getElementById("lgSearch"), out = document.getElementById("lgSearchOut"); if (!inp || !out) return;
+    var q = (inp.value || "").trim().toLowerCase();
+    if (!q) { out.innerHTML = ""; return; }
+    var hits = data.ledger.filter(function(e){
+      if (e._hidden || !canSeeSplit(e.split)) return false;
+      return [e.memo, e.category, e.subcategory, String(e.amount), e.date].join(" ").toLowerCase().indexOf(q) !== -1;
+    }).sort(function(a,b){ return (b.date||"").localeCompare(a.date||""); });
+    var ex = hits.filter(function(e){ return e.type === "expense"; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+    var inc = hits.filter(function(e){ return e.type === "income"; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+    var h = '<p class="stat-sub" style="margin:8px 0 4px;">' + hits.length + '件' + (ex ? '・支出計 ' + yen(ex) : '') + (inc ? '・収入計 ' + yen(inc) : '') + (hits.length > 40 ? '（新しい順に40件）' : '') + '</p>';
+    h += hits.slice(0, 40).map(function(e){
+      return '<div class="row"><div class="rname"><span class="rtitle">' + (e.memo || e.category) + '</span><span class="rmeta">' + e.date + ' ・ ' + e.category + ' ・ ' + splitLabel(e.split) + '</span></div><span class="ramount ' + (e.type === "income" ? "income" : "expense") + '">' + (e.type === "income" ? "+" : "−") + yen(e.amount).replace("¥", "") + '</span></div>';
+    }).join("");
+    out.innerHTML = h;
+  }
+  document.getElementById("lgSearch").addEventListener("input", renderSearch);
+  var _rlS = renderLedger; renderLedger = function(){ _rlS.apply(this, arguments); try { renderSearch(); } catch(e){} };
+
+  function renderNW(){
+    var el = document.getElementById("nwBody"); if (!el) return;
+    var cur = assetsTotal() - liabilitiesTotal(), hist = data.assetHistory.slice().filter(function(h){ return h.date; }).sort(function(a,b){ return a.date.localeCompare(b.date); });
+    if (!hist.length) { el.innerHTML = '<p class="empty">記録がまだありません。アプリを開くたびに、その日の純資産が自動で記録されます。</p>'; return; }
+    var ago = function(days){ var d = new Date(Date.now() - days * 86400000), k = d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()), best = null; hist.forEach(function(h){ if (h.date <= k) best = h; }); return best; };
+    var rows = [["1ヶ月前", 30], ["3ヶ月前", 91], ["半年前", 182], ["1年前", 365]].map(function(p){
+      var r = ago(p[1]); if (!r) return "";
+      var d = cur - Number(r.total||0), pct = r.total ? Math.round(d / Math.abs(r.total) * 1000) / 10 : null;
+      return '<div class="rp-line"><span>' + p[0] + '（' + r.date.slice(5).replace("-", "/") + '）比</span><b style="color:' + (d >= 0 ? "var(--teal-deep,#0C7A6E)" : "var(--coral-deep,#E8503F)") + '">' + (d >= 0 ? "+" : "−") + yen(Math.abs(d)) + (pct !== null ? '（' + (d >= 0 ? "+" : "") + pct + '%）' : '') + '</b></div>';
+    }).join("");
+    el.innerHTML = rows || '<p class="stat-sub">比べられる過去の記録がまだありません（最初の記録：' + hist[0].date + '）。日がたつと、1ヶ月前・3ヶ月前・1年前との差が出ます。</p>';
+  }
+  var _raN = renderAssets; renderAssets = function(){ _raN.apply(this, arguments); try { renderNW(); } catch(e){} };
+
+  function renderYearForecast(){
+    var el = document.getElementById("yearForecast"); if (!el) return;
+    if (yearOffset !== 0) { el.textContent = ""; return; }
+    var cur = currentMonthKey(), y = cur.slice(0,4), n = parseInt(cur.slice(5), 10) - 1;
+    if (n < 1) { el.textContent = "来月になると、このペースでの年末予測が出ます。"; return; }
+    var first = 0;
+    data.ledger.forEach(function(e){ if (e.date && e.date.slice(0,4) === y) { var mm = parseInt(e.date.slice(5,7), 10); if (mm <= n && (!first || mm < first)) first = mm; } });
+    if (!first) { el.textContent = ""; return; }
+    var ytd = 0, cnt = n - first + 1;
+    for (var m = first; m <= n; m++) { var st = monthStats(y + "-" + pad2(m)); ytd += st.inc - st.exp; }
+    var avg = ytd / cnt, fc = ytd + avg * (12 - n);
+    el.innerHTML = '📮 このペースだと、年末までの収支は <b>' + (fc >= 0 ? "+" : "−") + yen(Math.abs(fc)) + '</b>（' + first + '〜' + n + '月の月平均 ' + (avg >= 0 ? "+" : "−") + yen(Math.abs(avg)) + '）';
+  }
+  var _ryS = renderYearSummary; renderYearSummary = function(){ _ryS.apply(this, arguments); try { renderYearForecast(); } catch(e){} };
+
+  function renderSetAside(){
+    var el = document.getElementById("setAsideBody"); if (!el) return;
+    var irr = data.fixedCosts.filter(function(f){ return f.type === "expense" && (f.frequency || "毎月") === "不定期" && canSeeSplit(f.owner || ""); });
+    if (!irr.length) { el.innerHTML = '<p class="stat-sub">頻度が「不定期（年1回など）」の固定費を登録すると、毎月いくら取り分けておけばいいかをここに出します（税金・車検・保険など）。</p>'; return; }
+    var tot = irr.reduce(function(s,f){ return s + Number(f.amount||0); }, 0);
+    el.innerHTML = irr.map(function(f){ return '<div class="rp-line"><span>' + ownBadge(f.owner) + f.name + '（年' + yen(f.amount) + '）</span><b>月 ' + yen(Math.ceil(Number(f.amount||0) / 12)) + '</b></div>'; }).join("")
+      + '<div class="rp-line" style="border-top:1px solid var(--line);font-weight:800;"><span>毎月の取り分け合計</span><b>' + yen(Math.ceil(tot / 12)) + '</b></div>'
+      + '<p class="stat-sub" style="margin-top:6px;">年1回の大きな支出に備えて、毎月この金額を別口座に分けておくと安心です。</p>';
+  }
+  var _rfS = renderFixedCosts; renderFixedCosts = function(){ _rfS.apply(this, arguments); try { renderSetAside(); } catch(e){} };
+
+  // 自動バックアップ（この端末の中に、月1回・直近3か月分）
+  function autoBackup(){
+    try {
+      if (!data.ledger.length && !data.assets.length) return;
+      var mk = currentMonthKey(), key = "kakeibo_auto_" + mk;
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, JSON.stringify(Object.assign({}, data, { settings: settings, savedAt: Date.now() })));
+      var keys = []; for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf("kakeibo_auto_") === 0) keys.push(k); }
+      keys.sort().slice(0, Math.max(0, keys.length - 3)).forEach(function(k){ localStorage.removeItem(k); });
+    } catch(e) {}
+  }
+  setTimeout(autoBackup, 8000);
+  function autoBackupKeys(){ var keys = []; try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf("kakeibo_auto_") === 0) keys.push(k); } } catch(e) {} return keys.sort(); }
+  (function(){
+    var pane = document.getElementById("pane-settings"); if (!pane) return;
+    var c = document.createElement("div"); c.className = "card"; c.id = "verCard";
+    c.innerHTML = '<h3>🔄 バージョン・自動バックアップ</h3><p class="stat-sub" id="verInfo"></p><button class="ghost" id="verCheck" style="width:100%;margin-bottom:8px;">最新版か確認する</button><p class="stat-sub" id="autoBkInfo"></p><button class="ghost" id="autoBkOut" style="width:100%;">最新の自動バックアップを書き出す</button>';
+    pane.appendChild(c); try { applySettingsGroup(); } catch(e) {}
+    var meta = document.querySelector('meta[name="app-build"]'), b0 = meta ? meta.content : "";
+    var info = document.getElementById("verInfo");
+    info.textContent = b0 ? ("この画面のバージョン：" + new Date(Number(b0) * 1000).toLocaleString("ja-JP")) : "Claudeの中で開いているアプリは、常に最新版に自動で更新されます。";
+    if (!b0 || location.protocol === "file:") document.getElementById("verCheck").style.display = "none";
+    document.getElementById("verCheck").addEventListener("click", function(){
+      info.textContent = "確認中…";
+      fetch(location.href.split("#")[0] + (location.href.indexOf("?") < 0 ? "?" : "&") + "t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.text(); }).then(function(t){
+        var x = t.match(/name="app-build" content="([^"]+)"/);
+        info.textContent = (x && x[1] !== b0) ? "🔄 新しいバージョンがあります。ページを再読み込みしてください。" : "✅ 最新版です（" + new Date(Number(b0) * 1000).toLocaleString("ja-JP") + "）";
+      }).catch(function(){ info.textContent = "確認できませんでした。通信状況を見てください。"; });
+    });
+    var bi = function(){ var ks = autoBackupKeys(); document.getElementById("autoBkInfo").textContent = ks.length ? ("この端末に自動保存された月：" + ks.map(function(k){ return k.replace("kakeibo_auto_", ""); }).join("、") + "（月に1回・直近3か月分。端末のデータを消すと一緒に消えます）") : "自動バックアップは、月に1回この端末の中に作られます（まだありません）。"; };
+    bi();
+    document.getElementById("autoBkOut").addEventListener("click", function(){
+      var ks = autoBackupKeys(); if (!ks.length) { showToast("自動バックアップがまだありません"); return; }
+      var k = ks[ks.length - 1], txt = localStorage.getItem(k) || "{}";
+      var blob = new Blob([txt], { type: "application/json" }), url = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = url; a.download = "money-note-auto-" + k.replace("kakeibo_auto_", "") + ".json"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    });
+  })();
   document.getElementById("rpPrev").addEventListener("click", function(){ reportMonth = shiftMonthKey(reportMonth || currentMonthKey(), -1); renderReport(); });
   document.getElementById("rpNext").addEventListener("click", function(){ var c = currentMonthKey(); if ((reportMonth || c) < c) { reportMonth = shiftMonthKey(reportMonth, 1); renderReport(); } });
 
