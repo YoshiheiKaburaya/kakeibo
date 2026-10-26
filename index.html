@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1792994546">
+<meta name="app-build" content="1792998145">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -329,6 +329,13 @@
   .bs-r span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; } .bs-r b { font-weight:700; white-space:nowrap; }
   .bs-r.sum { border-top:1px solid #3b3a52; font-weight:800; } .bs-r.tot { border-top:2px solid #3b3a52; border-bottom:none; font-weight:800; background:rgba(0,0,0,.05); padding:6px; }
   .bs-fill { flex:1; } .bs-none { text-align:center; color:var(--sub); padding:4px; }
+
+  .kp-pad { background:#fff; border:2px solid var(--line); box-shadow:0 -4px 14px rgba(43,36,51,.08); }
+  .kp-pad .kp-amount { color:#2B2433; } .kp-pad .kp-yen { color:#8D8496; } .kp-pad .kp-calc { color:#8D8496; }
+  .kp-pad .kp-key { background:#F3EFE8; color:#2B2433; font-weight:800; }
+  .kp-pad .kp-key:active { background:#E5DFD3; }
+  .kp-pad .kp-key.op { color:#E8503F; background:#FFE9E5; } .kp-pad .kp-key.clr { color:#6B6475; background:#E9E4DA; }
+  .kp-pad .kp-key.ok { background:var(--coral); color:#fff; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -393,8 +400,7 @@
       </div>
 
       <div class="card" data-lgsub-pane="chart">
-        <h3>内訳（<span id="breakdownPeriodLabel">今月</span>）</h3>
-        <p class="stat-sub" style="margin-bottom:10px;">上の家計簿の表で月や年を切り替えると、ここもその期間に合わせて表示されます。</p>
+        <div class="table-nav" style="margin-bottom:10px;"><button class="ghost small" id="bdPrev">◀</button><div class="table-nav-label"><span id="breakdownPeriodLabel">今月</span>の内訳</div><button class="ghost small" id="bdNext">▶</button></div>
         <div class="scope-bar" style="margin-bottom:8px;">
           <button data-bdscope="全体" class="active">全体</button>
           <button data-bdscope="家族">家族</button>
@@ -751,6 +757,7 @@
         <label class="field"><span>厚生年金の加入予定月数</span><input type="number" id="penKouseiMonths" value="360"></label>
         <label class="field"><span>厚生年金加入期間中の平均年収（円）</span><input type="number" id="penAvgIncome" value="5000000" inputmode="numeric"></label>
         <div class="stat-sub" style="margin:6px 0 4px;font-weight:700;">🎓 学生納付特例・免除・追納（誰の年金かごとに保存）</div>
+        <label class="field"><span>免除の種類</span><select id="penExKind"><option value="student">学生納付特例・納付猶予（未追納だと年金額に0ヶ月でカウント）</option><option value="full">全額免除（未追納だと半分でカウント）</option></select></label>
         <label class="field"><span>免除・猶予を受けた期間（ヶ月）例）大学の学生納付特例＝24〜48</span><input type="number" id="penExempt" value="0" min="0" inputmode="numeric"></label>
         <label class="field"><span>そのうち追納（あとから納付）した/する月数</span><input type="number" id="penBack" value="0" min="0" inputmode="numeric"></label>
         <p class="stat-sub" id="penExNote" style="margin:0 0 8px;"></p>
@@ -1970,6 +1977,8 @@
     }
   }
 
+  document.getElementById("bdPrev").addEventListener("click", function(){ document.getElementById("lgMonthPrev").click(); });
+  document.getElementById("bdNext").addEventListener("click", function(){ document.getElementById("lgMonthNext").click(); });
   document.getElementById("lgMonthPrev").addEventListener("click", function(){ navCursor = prevCursor(navCursor); tableQuickAdd=null; tableExpandedCat=null; tableExpandedEditId=null; investQuickAddId=null; breakdownExpandedCat=null; renderCatTable(); renderInvestTable(); renderBreakdown(); });
   document.getElementById("lgMonthNext").addEventListener("click", function(){ navCursor = nextCursor(navCursor); tableQuickAdd=null; tableExpandedCat=null; tableExpandedEditId=null; investQuickAddId=null; breakdownExpandedCat=null; renderCatTable(); renderInvestTable(); renderBreakdown(); });
   document.getElementById("gotoCatSettings").addEventListener("click", function(){
@@ -2155,24 +2164,27 @@
     try {
       var bctx = document.getElementById("chartBreakdown").getContext("2d");
       if (chartBreakdown) chartBreakdown.destroy();
-      if (!catKeys.length) { chartBreakdown = null; bctx.clearRect(0,0,9999,9999); }
+      var ownMode = breakdownScope === "全体" && allTotal > 0;
+      if (!catKeys.length && !ownMode) { chartBreakdown = null; bctx.clearRect(0,0,9999,9999); }
       else {
         // 上位5つ＋「その他」にまとめて、見やすくする
         var labels = catKeys.slice(0, TOP), vals = labels.map(function(c){ return byCat[c]; });
         var rest = catKeys.slice(TOP);
         if (rest.length) { labels.push("その他（" + rest.length + "項目）"); vals.push(rest.reduce(function(s,c){ return s + byCat[c]; }, 0)); }
+        var bgCols = labels.map(function(_,i){ return colorOf(i); }), centerTotal = total;
+        if (ownMode) { labels = ["家族","夫","妻"].filter(function(o){ return oSum[o] > 0; }); vals = labels.map(function(o){ return oSum[o]; }); bgCols = labels.map(function(o){ return OWN_COLORS[o]; }); centerTotal = allTotal; }
         chartBreakdown = new Chart(bctx, { type: "doughnut",
-          data: { labels: labels, datasets: [{ data: vals, backgroundColor: labels.map(function(_,i){ return colorOf(i); }), borderColor: "#FFFCF5", borderWidth: 3, hoverOffset: 4 }] },
+          data: { labels: labels, datasets: [{ data: vals, backgroundColor: bgCols, borderColor: "#FFFCF5", borderWidth: 3, hoverOffset: 4 }] },
           options: { responsive:true, maintainAspectRatio:false, cutout: "64%", plugins: {
             legend: { display: false },
-            tooltip: { callbacks: { label: function(ctx){ var v = ctx.parsed; return " " + ctx.label + "：" + yen(v) + "（" + pctText(v) + "）"; } } }
+            tooltip: { callbacks: { label: function(ctx){ var v = ctx.parsed; return " " + ctx.label + "：" + yen(v) + "（" + (ownMode && allTotal ? Math.round(v / allTotal * 100) : pctText(v)) + (ownMode ? "%" : "") + "）"; } } }
           } },
           plugins: [{ id: "centerText", afterDraw: function(chart){
             var c = chart.ctx, a = chart.chartArea; if (!a) return;
             var x = (a.left + a.right) / 2, y = (a.top + a.bottom) / 2;
             c.save(); c.textAlign = "center"; c.textBaseline = "middle";
             c.fillStyle = "#8D8496"; c.font = "700 11px 'Zen Kaku Gothic New', sans-serif"; c.fillText((breakdownScope === "全体" ? "全体" : breakdownScope) + "の" + (breakdownType === "expense" ? "支出" : "収入"), x, y - 14);
-            c.fillStyle = "#2B2133"; c.font = "800 19px 'Zen Kaku Gothic New', sans-serif"; c.fillText(yen(total), x, y + 8);
+            c.fillStyle = "#2B2133"; c.font = "800 19px 'Zen Kaku Gothic New', sans-serif"; c.fillText(yen(centerTotal), x, y + 8);
             c.restore();
           } }] });
       }
@@ -2951,6 +2963,12 @@
 
   var simViewYears = null, simScope = "全体";
   function simScoped(){ return data.assets.filter(function(a){ return a.type === "投資（株式・投信）" && fireScopeMatch(simScope, a.owner); }); }
+  function dcYearsLeft(a){
+    if (!a || !a.dc || (a.owner !== "夫" && a.owner !== "妻")) return null;
+    var b = birthOf(a.owner); if (!b) return null; var d = new Date(b); if (isNaN(d)) return null;
+    var t = new Date(d.getFullYear() + 60, d.getMonth(), d.getDate());
+    return Math.max(0, Math.floor((t - new Date()) / (365.25 * 864e5) * 12) / 12);
+  }
   function renderPerAssetSim(){
     var all = simScoped().filter(function(a){ return a.trackGain; });
     var vis = all.filter(function(a){ return canSeeSplit(a.owner); }), hid = all.filter(function(a){ return !canSeeSplit(a.owner); });
@@ -2959,11 +2977,11 @@
     var yrBar = '<div class="scope-bar" id="simYearBar" style="margin-bottom:10px; flex-wrap:wrap;">' + [5,10,15,20,25,30,40].map(function(y){ return '<button data-y="'+y+'"'+(simViewYears===y?' class="active"':'')+' style="flex:1 0 20%;">'+y+'年後</button>'; }).join("") + '</div>';
     if (!all.length) { listEl.innerHTML = scBar + '<p class="empty">この対象の投資資産はありません</p>'; bindSimBars(listEl); return; }
     var yearsOf = function(a){ return simViewYears || (a.simYears !== undefined ? a.simYears : 20); };
-    var calc = function(a){ var cur = assetValue(a), rate = a.assumedRate !== undefined ? a.assumedRate : 5, mo = Number(a.monthlyContribution||0); return { cur: cur, mo: mo, rate: rate, fut: futureValueCalc(cur, mo, rate, yearsOf(a)) }; };
+    var calc = function(a){ var cur = assetValue(a), rate = a.assumedRate !== undefined ? a.assumedRate : 5, mo = Number(a.monthlyContribution||0), yr = yearsOf(a), left = dcYearsLeft(a), capped = false; if (left !== null && left < yr) { yr = left; capped = true; } return { cur: cur, mo: mo, rate: rate, yr: yr, capped: capped, fut: futureValueCalc(cur, mo, rate, yr) }; };
     var rows = vis.map(function(a){
-      var c = calc(a), years = yearsOf(a);
+      var c = calc(a), years = c.capped ? ('60歳まで約' + (Math.round(c.yr * 10) / 10)) : yearsOf(a);
       return '<div class="row">'
-        + '<div class="rname"><span class="rtitle">'+a.name+'</span><span class="rmeta">現在'+yen(c.cur)+' ・ 月々'+yen(c.mo)+' ・ 年利'+c.rate+'% ・ '+years+'年後</span></div>'
+        + '<div class="rname"><span class="rtitle">'+a.name+'</span><span class="rmeta">現在'+yen(c.cur)+' ・ 月々'+yen(c.mo)+' ・ 年利'+c.rate+'% ・ '+years+'年後'+(c.capped ? '（60歳で停止）' : '')+(a.dc && a.dcSelf ? ' ・ うち自己負担'+yen(a.dcSelf)+'/月' : '')+'</span></div>'
         + '<span class="ramount income">'+yen(c.fut)+'</span>'
         + '<button class="ghost small view-sim" data-id="'+a.id+'" style="white-space:nowrap;">詳しく</button>'
         + '</div>';
@@ -2988,7 +3006,9 @@
       b.addEventListener("click", function(){
         document.getElementById("simAssetSelect").value = b.dataset.id;
         document.getElementById("pullFromAssets").click();
-        if (simViewYears) { document.getElementById("simYears").value = simViewYears; try { runInvestSim(); } catch(e) {} }
+        var dcA = data.assets.find(function(x){ return x.id === b.dataset.id; }), dcL = dcYearsLeft(dcA);
+        if (dcL !== null && simViewYears && dcL < simViewYears) { document.getElementById("simYears").value = Math.max(1, Math.round(dcL)); try { runInvestSim(); } catch(e) {} }
+        else if (simViewYears) { document.getElementById("simYears").value = simViewYears; try { runInvestSim(); } catch(e) {} }
       });
     });
   }
@@ -3101,9 +3121,10 @@
     var bkM = Math.max(0, Math.min(exM, Number((document.getElementById("penBack")||{}).value) || 0));
     var unpaidEx = exM - bkM;
     // 納付した月＝1、未追納の免除月＝1/2（全額免除の年金額は国庫負担分のみ）、追納した月＝1
-    var kiso = 816000 * ((kisoMonths - unpaidEx + unpaidEx * 0.5) / 480);
+    var exW = ((document.getElementById("penExKind")||{}).value === "full") ? 0.5 : 0;
+    var kiso = 816000 * ((kisoMonths - unpaidEx + unpaidEx * exW) / 480);
     var exNote = document.getElementById("penExNote");
-    if (exNote) exNote.textContent = exM ? ("免除" + exM + "ヶ月のうち未追納" + unpaidEx + "ヶ月は半額計算。追納すると満額扱いで年 約" + yen(816000 * unpaidEx * 0.5 / 480) + " 増えます。追納は10年以内・承認月から3年度目以降は加算金あり。") : "";
+    if (exNote) exNote.textContent = exM ? ("免除" + exM + "ヶ月のうち未追納" + unpaidEx + "ヶ月は" + (exW ? "半額" : "年金額に入らない（0）") + "計算。追納すると満額扱いで年 約" + yen(816000 * unpaidEx * (1 - exW) / 480) + " 増えます。追納は10年以内・承認月から3年度目以降は加算金あり。") : "";
     var kousei = (avgIncome/12) * (5.481/1000) * kouseiMonths;
     var total = kiso + kousei;
     document.getElementById("penKisoOut").textContent = yen(kiso);
@@ -3112,9 +3133,9 @@
     document.getElementById("penMonthlyOut").textContent = "月額換算で約 " + yen(total/12);
   }
   document.getElementById("penRun").addEventListener("click", runPension);
-  function penExLoad(){ var w = document.getElementById("penWho").value, e = (settings.penEx||{})[w] || {}; document.getElementById("penExempt").value = e.ex || 0; document.getElementById("penBack").value = e.back || 0; }
-  function penExSave(){ var w = document.getElementById("penWho").value, m = Object.assign({}, settings.penEx||{}); m[w] = { ex: Number(document.getElementById("penExempt").value)||0, back: Number(document.getElementById("penBack").value)||0 }; updateFireSettings({ penEx: m }); }
-  ["penExempt","penBack"].forEach(function(i){ document.getElementById(i).addEventListener("change", function(){ penExSave(); runPension(); }); });
+  function penExLoad(){ var w = document.getElementById("penWho").value, e = (settings.penEx||{})[w] || {}; document.getElementById("penExKind").value = e.kind || "student"; document.getElementById("penExempt").value = e.ex || 0; document.getElementById("penBack").value = e.back || 0; }
+  function penExSave(){ var w = document.getElementById("penWho").value, m = Object.assign({}, settings.penEx||{}); m[w] = { kind: document.getElementById("penExKind").value, ex: Number(document.getElementById("penExempt").value)||0, back: Number(document.getElementById("penBack").value)||0 }; updateFireSettings({ penEx: m }); }
+  ["penExKind","penExempt","penBack"].forEach(function(i){ document.getElementById(i).addEventListener("change", function(){ penExSave(); runPension(); }); });
 
 
   // ---------- FIRE: 資産・家計簿との連動 ----------
@@ -3667,7 +3688,6 @@
     var html = '<div class="kp-top"><div class="kp-types"><button data-kptype="expense" class="'+(kp.type==="expense"?'on':'')+'">支出</button><button data-kptype="income" class="'+(kp.type==="income"?'on':'')+'">収入</button></div>'
       + '<label class="kp-rcbtn kp-rcmini">📷 レシート<input type="file" id="kpRcFile" accept="image/*" style="display:none"></label></div>'
       + (rcStatus ? '<div id="kpRcSt" class="stat-sub" style="margin:0 0 6px;">'+rcStatus+'</div>' : '<span id="kpRcSt"></span>')
-      + kpChipsHtml()
       + '<div class="kp-pair">' + line("日付", '<input type="date" id="kpDate" value="'+kp.date+'">')
       + line("カテゴリ", '<button type="button" class="kp-catbtn" data-kpcatopen="1">' + (kp.cat ? catIcon(kp.cat) + ' ' + kp.cat : '選択') + (kp.sub ? '・' + kp.sub : '') + ' ▾</button>') + '</div>'
       + (kp.catOpen ? '<div class="kp-catgrid">' + cats.map(function(c){ return '<button type="button" class="kp-cg' + (c.name===kp.cat?' on':'') + '" data-kpcat="'+c.name+'"><span>'+catIcon(c.name)+'</span>'+c.name+'</button>'; }).join("") + '</div>' : '')
