@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1792999257">
+<meta name="app-build" content="1793013165">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -437,7 +437,7 @@
         <div class="table-nav">
           <button class="ghost small" id="yearPrev">◀</button>
           <div class="table-nav-label" id="yearLabel">2026年 年間サマリー</div>
-          <button class="ghost small" id="yearNext">▶</button>
+          <button class="ghost small" id="yearNext">▶</button><button class="ghost small" id="yearToday">今日</button>
         </div>
         <div class="split-summary">
           <div class="ss-box"><div class="ss-label">年間収入</div><div class="ss-val" id="yearIncome">¥0</div></div>
@@ -2406,6 +2406,7 @@
     } catch(chartErr) { console.error("chartYear failed:", chartErr); }
   }
   document.getElementById("yearPrev").addEventListener("click", function(){ yearOffset--; renderYearSummary(); });
+  document.getElementById("yearToday").addEventListener("click", function(){ yearOffset = 0; renderYearSummary(); });
   document.getElementById("yearNext").addEventListener("click", function(){ yearOffset++; renderYearSummary(); });
 
   // ---------- Fixed costs tab ----------
