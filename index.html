@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1792998145">
+<meta name="app-build" content="1792999257">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -387,7 +387,7 @@
         <div class="table-nav">
           <button class="ghost small" id="lgMonthPrev">◀</button>
           <div class="table-nav-label" id="lgMonthLabel">2026年2月</div>
-          <button class="ghost small" id="lgMonthNext">▶</button>
+          <button class="ghost small" id="lgMonthNext">▶</button><button class="ghost small" id="lgMonthToday">今日</button>
         </div>
         <div id="catTable"></div>
         <button class="ghost small" id="gotoCatSettings" style="margin-top:10px;">＋カテゴリ・小カテゴリを追加・編集する</button>
@@ -400,7 +400,7 @@
       </div>
 
       <div class="card" data-lgsub-pane="chart">
-        <div class="table-nav" style="margin-bottom:10px;"><button class="ghost small" id="bdPrev">◀</button><div class="table-nav-label"><span id="breakdownPeriodLabel">今月</span>の内訳</div><button class="ghost small" id="bdNext">▶</button></div>
+        <div class="table-nav" style="margin-bottom:10px;"><button class="ghost small" id="bdPrev">◀</button><div class="table-nav-label"><span id="breakdownPeriodLabel">今月</span>の内訳</div><button class="ghost small" id="bdNext">▶</button><button class="ghost small" id="bdToday">今日</button></div>
         <div class="scope-bar" style="margin-bottom:8px;">
           <button data-bdscope="全体" class="active">全体</button>
           <button data-bdscope="家族">家族</button>
@@ -417,7 +417,7 @@
         <p class="stat-sub" id="breakdownHint" style="margin-top:8px;">カテゴリをタップすると、その中の小カテゴリ別に見られます。</p>
       </div>
 
-      <div class="card accent-lav" data-lgsub-pane="chart" id="reportCard"><div class="table-nav"><button class="ghost small" id="rpPrev">◀</button><div class="table-nav-label" id="rpLabel">📋 月の振り返り</div><button class="ghost small" id="rpNext">▶</button></div><div id="reportBody"></div></div>
+      <div class="card accent-lav" data-lgsub-pane="chart" id="reportCard"><div class="table-nav"><button class="ghost small" id="rpPrev">◀</button><div class="table-nav-label" id="rpLabel">📋 月の振り返り</div><button class="ghost small" id="rpNext">▶</button><button class="ghost small" id="rpToday">今月</button></div><div id="reportBody"></div></div>
       <div class="card accent-teal" data-lgsub-pane="chart" id="plCard"><h3 id="plTitle">損益計算書（PL）</h3><p class="stat-sub">上の「振り返り」の月と連動します</p><div id="plBody"></div></div>
 
       <div class="card accent-sun" data-lgsub-pane="chart">
@@ -1979,6 +1979,9 @@
 
   document.getElementById("bdPrev").addEventListener("click", function(){ document.getElementById("lgMonthPrev").click(); });
   document.getElementById("bdNext").addEventListener("click", function(){ document.getElementById("lgMonthNext").click(); });
+  function goTodayCursor(){ navCursor = { type: "month", monthKey: currentMonthKey() }; tableQuickAdd=null; tableExpandedCat=null; tableExpandedEditId=null; investQuickAddId=null; breakdownExpandedCat=null; renderCatTable(); renderInvestTable(); renderBreakdown(); }
+  document.getElementById("lgMonthToday").addEventListener("click", goTodayCursor);
+  document.getElementById("bdToday").addEventListener("click", goTodayCursor);
   document.getElementById("lgMonthPrev").addEventListener("click", function(){ navCursor = prevCursor(navCursor); tableQuickAdd=null; tableExpandedCat=null; tableExpandedEditId=null; investQuickAddId=null; breakdownExpandedCat=null; renderCatTable(); renderInvestTable(); renderBreakdown(); });
   document.getElementById("lgMonthNext").addEventListener("click", function(){ navCursor = nextCursor(navCursor); tableQuickAdd=null; tableExpandedCat=null; tableExpandedEditId=null; investQuickAddId=null; breakdownExpandedCat=null; renderCatTable(); renderInvestTable(); renderBreakdown(); });
   document.getElementById("gotoCatSettings").addEventListener("click", function(){
@@ -3568,7 +3571,7 @@
     var first = new Date(yy, mm-1, 1).getDay(), dim = calDaysIn(calMonth);
     var todayKey = todayStr();
     var html = '<div class="scope-bar" style="margin-bottom:10px;">' + ["全体","家族","夫","妻"].map(function(s){ return '<button data-calscope="'+s+'"'+(s===calScope?' class="active"':'')+'>'+s+'</button>'; }).join("") + '</div>'
-      + '<div class="table-nav"><button class="ghost small" id="calPrev">◀</button><div class="table-nav-label">'+yy+'年'+mm+'月</div><button class="ghost small" id="calNext">▶</button></div>'
+      + '<div class="table-nav"><button class="ghost small" id="calPrev">◀</button><div class="table-nav-label">'+yy+'年'+mm+'月</div><button class="ghost small" id="calNext">▶</button><button class="ghost small" id="calToday">今日</button></div>'
       + '<div class="cal-sum"><div><span>収入</span><b class="inc">'+yen(inc)+'</b></div><div><span>支出</span><b class="exp">'+yen(exp)+'</b></div><div><span>収支</span><b>'+(inc-exp<0?'−':'')+yen(Math.abs(inc-exp))+'</b></div></div>'
       + '<div class="cal-grid cal-head">' + ["日","月","火","水","木","金","土"].map(function(w,i){ return '<div class="'+(i===0?'sun':(i===6?'sat':''))+'">'+w+'</div>'; }).join("") + '</div>'
       + '<div class="cal-grid">';
@@ -3602,6 +3605,7 @@
     }
     el.innerHTML = html;
     el.querySelectorAll("[data-calscope]").forEach(function(b){ b.addEventListener("click", function(){ calScope = b.dataset.calscope; renderCalendar(); }); });
+    el.querySelector("#calToday").addEventListener("click", function(){ calMonth = currentMonthKey(); calSel = parseInt(todayStr().slice(8,10), 10); renderCalendar(); });
     el.querySelector("#calPrev").addEventListener("click", function(){ var q = calMonth.split("-"), y = parseInt(q[0],10), m = parseInt(q[1],10)-1; if (m < 1) { y--; m = 12; } calMonth = y+"-"+pad2(m); calSel = null; editingLedgerId = null; renderCalendar(); });
     el.querySelector("#calNext").addEventListener("click", function(){ var q = calMonth.split("-"), y = parseInt(q[0],10), m = parseInt(q[1],10)+1; if (m > 12) { y++; m = 1; } calMonth = y+"-"+pad2(m); calSel = null; editingLedgerId = null; renderCalendar(); });
     el.querySelectorAll(".cal-cell[data-day]").forEach(function(c){ c.addEventListener("click", function(){ var dd = Number(c.dataset.day); calSel = (calSel === dd) ? null : dd; editingLedgerId = null; renderCalendar(); }); });
@@ -3688,7 +3692,7 @@
     var html = '<div class="kp-top"><div class="kp-types"><button data-kptype="expense" class="'+(kp.type==="expense"?'on':'')+'">支出</button><button data-kptype="income" class="'+(kp.type==="income"?'on':'')+'">収入</button></div>'
       + '<label class="kp-rcbtn kp-rcmini">📷 レシート<input type="file" id="kpRcFile" accept="image/*" style="display:none"></label></div>'
       + (rcStatus ? '<div id="kpRcSt" class="stat-sub" style="margin:0 0 6px;">'+rcStatus+'</div>' : '<span id="kpRcSt"></span>')
-      + '<div class="kp-pair">' + line("日付", '<input type="date" id="kpDate" value="'+kp.date+'">')
+      + '<div class="kp-pair">' + line("日付", '<input type="date" id="kpDate" value="'+kp.date+'"><button type="button" class="ghost small" id="kpToday" style="margin:0 0 0 4px;padding:3px 8px;">今日</button>')
       + line("カテゴリ", '<button type="button" class="kp-catbtn" data-kpcatopen="1">' + (kp.cat ? catIcon(kp.cat) + ' ' + kp.cat : '選択') + (kp.sub ? '・' + kp.sub : '') + ' ▾</button>') + '</div>'
       + (kp.catOpen ? '<div class="kp-catgrid">' + cats.map(function(c){ return '<button type="button" class="kp-cg' + (c.name===kp.cat?' on':'') + '" data-kpcat="'+c.name+'"><span>'+catIcon(c.name)+'</span>'+c.name+'</button>'; }).join("") + '</div>' : '')
       + '<div class="kp-pair">' + line(kp.type === "expense" ? "支出元" : "入金先", accSel)
@@ -3710,6 +3714,7 @@
     el.querySelectorAll("[data-kptype]").forEach(function(b){ b.addEventListener("click", function(){ kp.type = b.dataset.kptype; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kpsplit]").forEach(function(b){ b.addEventListener("click", function(){ kp.split = b.dataset.kpsplit; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kppayer]").forEach(function(b){ b.addEventListener("click", function(){ kp.payer = b.dataset.kppayer; renderKeypad(); }); });
+    el.querySelector("#kpToday").addEventListener("click", function(){ kp.date = todayStr(); renderKeypad(); });
     el.querySelector("#kpDate").addEventListener("change", function(ev){ kp.date = ev.target.value; });
     el.querySelectorAll("[data-kpcat]").forEach(function(b){ b.addEventListener("click", function(){ kp.cat = b.dataset.kpcat; kp.sub = ""; kp.quad = null; kp.catOpen = false; renderKeypad(); }); });
     el.querySelectorAll("[data-kpcatopen]").forEach(function(b){ b.addEventListener("click", function(){ kp.catOpen = !kp.catOpen; renderKeypad(); }); });
@@ -4082,6 +4087,7 @@
     });
   }
   applySettingsGroup();
+  document.getElementById("rpToday").addEventListener("click", function(){ reportMonth = currentMonthKey(); renderReport(); });
   document.getElementById("rpPrev").addEventListener("click", function(){ reportMonth = shiftMonthKey(reportMonth || currentMonthKey(), -1); renderReport(); });
   document.getElementById("rpNext").addEventListener("click", function(){ var c = currentMonthKey(); if ((reportMonth || c) < c) { reportMonth = shiftMonthKey(reportMonth, 1); renderReport(); } });
 
