@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793102322">
+<meta name="app-build" content="1793133126">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -356,6 +356,17 @@
   :root[data-theme="dark"] .split-summary .ss-box, :root[data-theme="dark"] .quick-add-panel { background:#2B2437; }
   :root[data-theme="dark"] .notice { background:#3a3016; border-color:#6b5a22; }
   :root[data-theme="dark"] .kp-recent button { background:#2c2745; color:#c9bff5; } :root[data-theme="dark"] .toast { background:#F2EEF7; color:#17131E; }
+
+  .lp-t { width:100%; border-collapse:collapse; font-size:11.5px; } .lp-t th, .lp-t td { padding:5px 6px; border-bottom:1px solid var(--line); white-space:nowrap; text-align:left; } .lp-t td.num, .lp-t th:nth-child(n+3):nth-child(-n+6) { text-align:right; } .lp-t th { color:var(--sub); font-weight:700; position:sticky; top:0; background:var(--card); } .lp-neg td { color:var(--coral-deep); }
+  .ev-tpl { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; } .ev-tpl button { background:var(--sun-soft); color:var(--ink); border:none; border-radius:999px; padding:5px 11px; font-size:12px; font-weight:700; cursor:pointer; }
+
+  /* iPhone: 入力欄タップで画面が拡大・横にずれないよう16px、下のホームバーに隠れないよう余白 */
+  @supports (-webkit-touch-callout: none) { input:not([type=date]):not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; } }
+  button, .kp-key, .kp-pill, .kp-cg, select, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .kp-pad { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important; overscroll-behavior: contain; }
+  #kpBody.kp-catopen .kp-pad { display: none; }
+  #kpBody.kp-catopen .kp-catgrid { margin-bottom: 12px; }
+  .kp-catgrid { max-height: none !important; overflow: visible !important; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -842,9 +853,18 @@
       <div class="card" id="evCard"><h3>🎉 ライフイベント（大きな支出・収入）</h3>
         <p class="stat-sub" style="margin-bottom:8px;">子ども誕生・住宅購入・車の買い替えなど。入れた年齢で資産が増減するものとして、下のグラフと達成予測に反映します。</p>
         <div id="evList"></div>
+        <div class="ev-tpl"><button type="button" data-evtpl="結婚|30|3000000|cost">結婚</button><button type="button" data-evtpl="住宅購入の頭金|35|5000000|cost">住宅の頭金</button><button type="button" data-evtpl="出産・育児の準備|32|500000|cost">出産・育児準備</button><button type="button" data-evtpl="車の買い替え|40|3000000|cost">車の買い替え</button><button type="button" data-evtpl="子の大学入学|50|1500000|cost">子の大学入学</button><button type="button" data-evtpl="リフォーム・親の介護|55|2000000|cost">リフォーム・介護</button><button type="button" data-evtpl="退職金|60|10000000|gain">退職金</button></div>
         <div class="grid-2"><label class="field"><span>名前</span><input type="text" id="evName" placeholder="例）住宅購入の頭金"></label><label class="field"><span>その年の年齢</span><input type="number" id="evAge" placeholder="例）35"></label></div>
         <div class="grid-2"><label class="field"><span>金額（円）</span><input type="number" id="evAmt" inputmode="numeric" placeholder="例）5000000"></label><label class="field"><span>種類</span><select id="evKind"><option value="cost">支出（資産が減る）</option><option value="gain">収入（資産が増える）</option></select></label></div>
         <button class="ghost" id="evAdd" style="width:100%;">追加する</button>
+      </div>
+      <div class="card" id="lpCard"><h3>📅 ライフプラン表</h3>
+        <p class="stat-sub" style="margin-bottom:8px;">上のFIRE試算の入力（年齢・資産・運用利回り・年間の追加貯蓄）とライフイベントをもとに、年ごとの資産の動きを一覧にします。</p>
+        <div class="grid-2"><label class="field"><span>退職する年齢</span><input type="number" id="lpRetire" inputmode="numeric"></label><label class="field"><span>年金を受け取り始める年齢</span><input type="number" id="lpPAge" inputmode="numeric"></label></div>
+        <div class="grid-2"><label class="field"><span>老後の年金（月額・夫婦合計）</span><input type="number" id="lpPension" inputmode="numeric"></label><label class="field"><span>老後の年間支出（空欄＝今と同じ）</span><input type="number" id="lpAfter" inputmode="numeric"></label></div>
+        <div id="lpSummary"></div>
+        <div id="lpTable" style="overflow-x:auto; max-height:420px; overflow-y:auto; margin-top:8px;"></div>
+        <p class="stat-sub" style="margin-top:6px;">税金・インフレ・年金額の変化は入れていない簡易版です。</p>
       </div>
       <div class="card"><h3>資産推移の予測</h3><div class="chart-box h200"><canvas id="chartFire"></canvas></div></div>
       <p class="disclaimer">この試算は簡易的なものです。実際にはインフレ、税金、相場の変動、支出の変化などにより結果は変わります。あくまで目安としてご利用ください。</p>
@@ -1316,6 +1336,9 @@
         penWho: settings.penWho || "",
         wpWho: settings.wpWho || "夫",
         lifeEvents: settings.lifeEvents || [],
+        cards: settings.cards || [],
+        cardPaid: settings.cardPaid || {},
+        lp: settings.lp || {},
         wpAuto: settings.wpAuto !== false,
         penEx: settings.penEx || {},
         insLivRatio: settings.insLivRatio || 70,
@@ -1479,6 +1502,9 @@
           if (s && typeof s.penWho === "string" && s.penWho) settings.penWho = s.penWho;
           if (s && typeof s.wpWho === "string" && s.wpWho) settings.wpWho = s.wpWho;
           if (s && Array.isArray(s.lifeEvents)) settings.lifeEvents = s.lifeEvents;
+          if (s && Array.isArray(s.cards)) settings.cards = s.cards;
+          if (s && s.cardPaid && typeof s.cardPaid === "object") settings.cardPaid = s.cardPaid;
+          if (s && s.lp && typeof s.lp === "object") settings.lp = s.lp;
           if (s && typeof s.wpAuto === "boolean") settings.wpAuto = s.wpAuto;
           if (s && s.penEx && typeof s.penEx === "object") settings.penEx = s.penEx;
           if (s && typeof s.insLivRatio === "number") settings.insLivRatio = s.insLivRatio;
@@ -1826,7 +1852,7 @@
       }
       var subTxt = e.subcategory ? ("・"+e.subcategory) : "";
       var wasteTag = e.wasteful ? '<span class="waste-tag">😅</span>' : '';
-      var lockTag = (e._priv ? '<span class="lock-tag">🔒</span>' : '') + (e.proxy ? '<span class="lock-tag">' + (e.by || '') + 'が代理入力</span>' : '');
+      var lockTag = (e._priv ? '<span class="lock-tag">🔒</span>' : '') + (e.proxy ? '<span class="lock-tag">' + (e.by || '') + 'が代理入力</span>' : '') + (e.cardId ? '<span class="lock-tag">💳' + cardName(e.cardId) + '</span>' : '');
       var accTxt = e.accountId ? " ・ 口座反映済" : "";
       return '<div class="row'+(canEditSplit(e.split) ? ' row-clickable' : '')+' tx-row" data-id="'+e.id+'">'
         + '<div class="rname"><span class="rtitle">'+(e.memo||e.category)+subTxt+'</span><span class="rmeta">'+e.date+accTxt+'</span></div>'
@@ -2300,7 +2326,7 @@
         var accTxt = e.accountId ? " ・ 口座反映済" : "";
         var subTxt = e.subcategory ? ("・"+e.subcategory) : "";
         var wasteTag = e.wasteful ? '<span class="waste-tag">😅無駄遣い</span>' : '';
-        var lockTag = (e._priv ? '<span class="lock-tag">🔒</span>' : '') + (e.proxy ? '<span class="lock-tag">' + (e.by || '') + 'が代理入力</span>' : '');
+        var lockTag = (e._priv ? '<span class="lock-tag">🔒</span>' : '') + (e.proxy ? '<span class="lock-tag">' + (e.by || '') + 'が代理入力</span>' : '') + (e.cardId ? '<span class="lock-tag">💳' + cardName(e.cardId) + '</span>' : '');
         var sign = e.type === 'income' ? '+' : (e.type === 'invest' ? '→' : '−');
         return '<div class="row row-clickable" data-id="'+e.id+'">'
           + '<div class="rname"><span class="rtitle">'+ (e.memo || (e.type==="invest" ? ("積立："+e.category) : e.category)) +'</span>'
@@ -3820,6 +3846,7 @@
     var kpExtra = "";
     if (kp.type === "expense" && !kpProxy) { try { var prevC = monthStats((kp.date || todayStr()).slice(0, 7)).cats[kp.cat] || 0; kpExtra = "（今月の" + kp.cat + " 計" + yen(prevC + val) + "）"; } catch(e) {} }
     if (kpProxy) kpEnt.proxy = true;
+    if (kp.type === "expense" && kp.card && cardById(kp.card)) { kpEnt.cardId = kp.card; kpEnt.accountId = ""; }
     addLedger(kpEnt, function(id){ if (kpProxy) { showToast(kp0.split + "の分として " + saved.cat + " " + yen(val) + " を記録しました（相手の画面で見られます）"); return; } try { if (navigator.vibrate) navigator.vibrate(12); } catch(e) {} if (!id) { showToast(saved.cat + " " + yen(val) + " を記録しました" + kpExtra); return; } var snap = Object.assign({}, kpEnt, { id: id, _priv: kpPriv }); showUndoToast(saved.cat + " " + yen(val) + " を記録しました" + kpExtra, function(){ deleteLedger(snap); }, function(){ var dt = kpEnt.date || todayStr(); calMonth = dt.slice(0,7); calSel = parseInt(dt.slice(8,10), 10); editingLedgerId = id; showLgSub("calendar"); setTimeout(function(){ var r = document.querySelector("#calBody .row-editing"); if (r && r.scrollIntoView) r.scrollIntoView({ block: "center" }); }, 150); }); });
     proxyAllow = false; 
     kp.expr = ""; kp.memo = ""; kp.waste = false; kp.quad = null; rcStatus = "";
@@ -3844,7 +3871,7 @@
     var accSel = '<select id="kpAcc"><option value="">指定しない</option>' + accounts.map(function(a){ return '<option value="'+a.id+'"'+(a.id===kp.account?' selected':'')+'>'+a.name+'</option>'; }).join("") + '</select>';
     var html = '<div class="kp-top"><div class="kp-types"><button data-kptype="expense" class="'+(kp.type==="expense"?'on':'')+'">支出</button><button data-kptype="income" class="'+(kp.type==="income"?'on':'')+'">収入</button></div>'
       + '</div>'
-      + budSlimHtml()
+      + budSlimHtml() + catBudHtml()
       + (rcStatus ? '<div id="kpRcSt" class="stat-sub" style="margin:0 0 6px;">'+rcStatus+'</div>' : '<span id="kpRcSt"></span>')
       + '<div class="kp-pair">' + line("日付", '<input type="date" id="kpDate" value="'+kp.date+'"><button type="button" class="ghost small" id="kpToday" style="margin:0 0 0 4px;padding:3px 8px;">今日</button>')
       + line("カテゴリ", '<button type="button" class="kp-catbtn" data-kpcatopen="1">' + (kp.cat ? catIcon(kp.cat) + ' ' + kp.cat : '選択') + (kp.sub ? '・' + kp.sub : '') + ' ▾</button>') + '</div>'
@@ -3852,6 +3879,7 @@
       + (kp.catOpen ? '<div class="kp-catgrid">' + cats.map(function(c){ return '<button type="button" class="kp-cg' + (c.name===kp.cat?' on':'') + '" data-kpcat="'+c.name+'"><span>'+catIcon(c.name)+'</span>'+c.name+'</button>'; }).join("") + '</div>' : '')
       + '<div class="kp-pair">' + line(kp.type === "expense" ? "支出元" : "入金先", accSel)
       + (kp.type === "expense" ? line("払う人", '<div class="kp-pills">' + ["夫","妻"].map(function(o){ return pill("kppayer", o, o, kp.payer===o, false); }).join("") + '</div>') : '') + '</div>'
+      + cardLineHtml()
       + line("保存場所", '<div class="kp-pills">' + [["共通","家族"],["夫","夫"],["妻","妻"]].map(function(o){ return pill("kpsplit", o[0], o[1], kp.split===o[0], !canEditSplit(o[0])); }).join("") + '</div>')
       + (kp.type === "expense" ? ('<div class="kp-quads4">' + [1,2,3,4].map(function(q){ return pill("kpquad", q, QUAD_LABELS[q], Number(kp.quad || catQuad(catObj)) === q, false); }).join("") + '</div>') : '')
       + '<button type="button" class="ghost small" id="kpMore" style="margin:4px 0 6px;">'+(kp.more?'▾':'▸')+' さらに詳しく（小カテゴリ・メモなど）</button>'
@@ -3866,6 +3894,7 @@
       + ["7","8","9","⌫","4","5","6","÷","1","2","3","×","0","00","−","+"].map(function(k){ return '<button type="button" class="kp-key'+("÷×−+".indexOf(k)>=0?' op':(k==="⌫"?' clr':''))+'" data-k="'+k+'">'+k+'</button>'; }).join("")
       + '<button type="button" class="kp-key clr" data-k="C">C</button><button type="button" class="kp-key ok" id="kpOk">OK　記録する</button></div></div>';
     el.innerHTML = html; proxyAllow = false;
+    el.classList.toggle("kp-catopen", !!kp.catOpen);
     el.querySelectorAll("[data-kptype]").forEach(function(b){ b.addEventListener("click", function(){ kp.type = b.dataset.kptype; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kpsplit]").forEach(function(b){ b.addEventListener("click", function(){ kp.split = b.dataset.kpsplit; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kppayer]").forEach(function(b){ b.addEventListener("click", function(){ kp.payer = b.dataset.kppayer; renderKeypad(); }); });
@@ -3877,6 +3906,7 @@
     var bind = function(id, fn, evn){ var x = el.querySelector(id); if (x) x.addEventListener(evn || "change", fn); };
     bind("#kpSubSel", function(ev){ kp.sub = ev.target.value; });
     bind("#kpAcc", function(ev){ kp.account = ev.target.value; });
+    bind("#kpCard", function(ev){ kp.card = ev.target.value; });
     bind("#kpMemo", function(ev){ kp.memo = ev.target.value; }, "input");
     bind("#kpMemo", function(ev){ var m = lastByMemo(ev.target.value, kp.type); if (m && m.category && m.category !== kp.cat) { kp.memo = ev.target.value; kp.cat = m.category; kp.sub = m.subcategory || ""; renderKeypad(); } });
     el.querySelectorAll("[data-kpquad]").forEach(function(b){ b.addEventListener("click", function(){ kp.quad = Number(b.dataset.kpquad); renderKeypad(); }); });
@@ -4039,6 +4069,7 @@
   function logChange(action, e){
     if (!e) return;
     var rec = { at: Date.now(), by: myRole(), action: action, split: e.split || "", cat: e.category || "", amount: Number(e.amount||0), memo: e.memo || "", date: e.date || "" };
+    if (action === "del") { try { rec.ent = JSON.parse(JSON.stringify(e)); delete rec.ent.id; delete rec.ent._hidden; delete rec.ent._priv; } catch(x) {} }
     if (synced) { try { db.collection("history").doc(String(rec.at) + "_" + uid().slice(-3)).set(rec).catch(function(){}); } catch(x) {} }
     else { data.history = [rec].concat(data.history || []).slice(0, 100); saveLocal(); }
   }
@@ -4050,7 +4081,7 @@
     el.innerHTML = list.map(function(h){
       var d = new Date(h.at), t = (d.getMonth()+1) + "/" + d.getDate() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
       var body = canSeeSplit(h.split) ? ((h.memo || h.cat) + " " + yen(h.amount) + (h.date ? "（" + h.date.slice(5) + "分）" : "")) : "（相手の分）";
-      return '<div class="hist-row"><span class="ht">' + t + '</span><span><b>' + (h.by||"") + '</b> が' + (lab[h.action]||h.action) + '：' + body + '</span></div>';
+      return '<div class="hist-row"><span class="ht">' + t + '</span><span><b>' + (h.by||"") + '</b> が' + (lab[h.action]||h.action) + '：' + body + '</span>' + (h.action === 'del' && h.ent && canEditSplit(h.ent.split) && !lsGet('kakeibo_hr_' + h.at) ? '<button class="ghost small" data-hrestore="' + h.at + '" style="margin-left:6px;">元に戻す</button>' : '') + '</div>';
     }).join("");
   }
 
@@ -4223,7 +4254,7 @@
   var _raK = renderAssets; renderAssets = function(){ _raK.apply(this, arguments); try { applyAssetKind(); } catch(e){} };
 
   var setGroup = "個人";
-  var SET_GROUPS = { "個人": ["表示テーマ", "プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "共有": ["夫婦での共有", "非公開分"], "データ": ["バージョン", "バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
+  var SET_GROUPS = { "個人": ["クレジットカード", "表示テーマ", "プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "共有": ["夫婦での共有", "非公開分"], "データ": ["バージョン", "バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
   function applySettingsGroup(){
     var pane = document.getElementById("pane-settings"); if (!pane) return;
     var bar = document.getElementById("setSubBar");
@@ -4397,6 +4428,171 @@
     c.querySelectorAll("button").forEach(function(b){ b.addEventListener("click", function(){ lsSet("kakeibo_theme", b.dataset.th); applyTheme(b.dataset.th); mark(); }); });
     try { applySettingsGroup(); } catch(e) {}
   })();
+
+  // ===== v34 =====
+  // --- クレジットカード ---
+  function cardsList(){ return (settings.cards || []).filter(function(c){ return canSeeSplit(c.owner || ""); }); }
+  function cardById(id){ return (settings.cards || []).find(function(c){ return c.id === id; }); }
+  function cardName(id){ var c = cardById(id); return c ? c.name : "カード"; }
+  function ccDimOf(y, m){ return new Date(y, m + 1, 0).getDate(); }
+  function cardPayDate(c, ds){
+    var p = ds.split("-"), y = Number(p[0]), m = Number(p[1]) - 1, d = Number(p[2]);
+    var cl = Number(c.close) || 0, shift = (cl !== 0 && d > cl) ? 1 : 0;
+    var tm = m + shift + (c.payMon === undefined ? 1 : Number(c.payMon));
+    var yy = y + Math.floor(tm / 12), mm = ((tm % 12) + 12) % 12, dim = ccDimOf(yy, mm), pd = Number(c.pay) || 0;
+    var day = pd === 0 ? dim : Math.min(pd, dim);
+    return yy + "-" + pad2(mm + 1) + "-" + pad2(day);
+  }
+  function cardGroups(){
+    var g = {};
+    cardsList().forEach(function(c){
+      data.ledger.forEach(function(e){
+        if (e.cardId !== c.id || e.type !== "expense" || e._hidden || !canSeeSplit(e.split) || !e.date) return;
+        var pdt = cardPayDate(c, e.date), key = c.id + "|" + pdt;
+        if ((settings.cardPaid || {})[key] !== undefined) return;
+        if (!g[key]) g[key] = { key: key, card: c, pay: pdt, total: 0, n: 0 };
+        g[key].total += Number(e.amount || 0); g[key].n++;
+      });
+    });
+    return Object.keys(g).map(function(k){ return g[k]; }).sort(function(a, b){ return a.pay.localeCompare(b.pay); });
+  }
+  function renderCards(){
+    var list = document.getElementById("ccList"); if (!list) return;
+    var sel = document.getElementById("ccAcc");
+    if (sel && sel.dataset.n !== String(data.assets.length)) {
+      sel.innerHTML = '<option value="">指定しない</option>' + linkableAccounts().filter(function(a){ return canEditSplit(a.owner || ""); }).map(function(a){ return '<option value="' + a.id + '">' + a.name + '</option>'; }).join("");
+      sel.dataset.n = String(data.assets.length);
+    }
+    var cl = cardsList();
+    var dtxt = function(n){ return Number(n) === 0 ? "末日" : n + "日"; }, mt = ["当月", "翌月", "翌々月"];
+    list.innerHTML = cl.length ? cl.map(function(c){
+      var a = data.assets.find(function(x){ return x.id === c.accountId; });
+      return '<div class="row"><div class="rname"><span class="rtitle">' + ownBadge(c.owner) + c.name + '</span><span class="rmeta">' + dtxt(c.close) + '締め・' + mt[Number(c.payMon === undefined ? 1 : c.payMon)] + dtxt(c.pay) + '払い・' + (a ? a.name + 'から引き落とし' : '口座指定なし') + '</span></div><span class="ractions"><button class="del" data-ccdel="' + c.id + '">×</button></span></div>';
+    }).join("") : '<p class="empty">まだカードがありません</p>';
+    list.querySelectorAll("[data-ccdel]").forEach(function(b){ b.addEventListener("click", function(){ settings.cards = (settings.cards || []).filter(function(c){ return c.id !== b.dataset.ccdel; }); persistSettings(); renderCards(); renderKeypad(); }); });
+    var due = document.getElementById("ccDue"); if (!due) return;
+    var gs = cardGroups(), today = todayStr();
+    due.innerHTML = gs.length ? gs.map(function(x){
+      var a = data.assets.find(function(y){ return y.id === x.card.accountId; }), over = x.pay <= today;
+      return '<div class="row"><div class="rname"><span class="rtitle">' + x.card.name + '　' + yen(x.total) + '</span><span class="rmeta">' + x.pay.slice(5).replace("-", "/") + ' 引き落とし' + (over ? '（日付を過ぎています）' : '') + '・' + x.n + '件' + (a ? '・' + a.name : '') + '</span></div><span class="ractions"><button class="ghost small" data-ccpay="' + x.key + '"' + (over ? ' style="background:var(--coral);color:#fff;border-color:var(--coral);"' : '') + '>' + (a ? '反映する' : '済みにする') + '</button></span></div>';
+    }).join("") : '<p class="empty">カードで入力した支出が、ここにたまります</p>';
+    due.querySelectorAll("[data-ccpay]").forEach(function(b){ b.addEventListener("click", function(){ payCardGroup(b.dataset.ccpay); }); });
+  }
+  function payCardGroup(key){
+    var x = cardGroups().find(function(g){ return g.key === key; }); if (!x) return;
+    if (x.card.accountId && canEditSplit(((data.assets.find(function(a){ return a.id === x.card.accountId; }) || {}).owner) || "")) adjustAsset(x.card.accountId, -x.total);
+    settings.cardPaid = Object.assign({}, settings.cardPaid || {}); settings.cardPaid[key] = x.total;
+    persistSettings(); showToast(x.card.name + " " + yen(x.total) + " を引き落としとして反映しました"); renderCards(); renderNotice();
+  }
+  function cardLineHtml(){
+    if (kp.type !== "expense") return "";
+    var cl = cardsList(); if (!cl.length) return "";
+    return '<div class="kp-line"><span class="kp-lab2">カード</span><div class="kp-val"><select id="kpCard"><option value="">使わない</option>' + cl.map(function(c){ return '<option value="' + c.id + '"' + (c.id === kp.card ? ' selected' : '') + '>' + c.name + '</option>'; }).join("") + '</select></div></div>';
+  }
+  function catBudHtml(){
+    if (kp.type !== "expense" || !kp.cat || kp.proxy) return "";
+    var mk = currentMonthKey(), h = "";
+    ["家族", myRole()].filter(function(v, i, a){ return a.indexOf(v) === i; }).forEach(function(sc){
+      var b = (budgetOf(sc).cats || {})[kp.cat]; b = Number(b || 0); if (!b) return;
+      var sp = (catSpentFor(sc, mk)[kp.cat]) || 0, pct = Math.round(sp / b * 100);
+      h += '<div style="display:flex;align-items:center;gap:8px;font-size:11.5px;margin:2px 0;"><span style="flex:0 0 auto;color:var(--sub);">' + sc + '・' + kp.cat + '</span><div class="hm-bar" style="flex:1;margin:0;"><div class="hm-fill ' + (pct >= 100 ? 'over' : '') + '" style="width:' + Math.min(100, pct) + '%"></div></div><span style="flex:0 0 auto;">' + yen(sp) + ' / ' + yen(b) + '</span></div>';
+    });
+    return h;
+  }
+  var _rnC = renderNotice; renderNotice = function(){
+    _rnC.apply(this, arguments);
+    try {
+      var el = document.getElementById("noticeBar"); if (!el) return;
+      var today = todayStr();
+      cardGroups().filter(function(g){ return g.pay <= today; }).slice(0, 2).forEach(function(g){
+        var d = document.createElement("div"); d.className = "notice";
+        d.innerHTML = '<div class="nt">💳 ' + g.card.name + 'の引き落とし日（' + g.pay.slice(5).replace("-", "/") + '）です。' + yen(g.total) + '</div><button>反映する</button>';
+        d.querySelector("button").addEventListener("click", function(){ payCardGroup(g.key); }); el.appendChild(d);
+      });
+      // 週のふりかえり
+      var now = new Date(), dow = now.getDay();
+      if (dow === 0 || dow === 1) {
+        var sun = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow), wk = ym(sun) + "-" + pad2(sun.getDate());
+        if (lsGet("kakeibo_wk") !== wk) {
+          var sumRange = function(from, to){ var f = from.toISOString().slice(0, 10), t = to.toISOString().slice(0, 10); return data.ledger.filter(function(e){ return e.type === "expense" && !e._hidden && canSeeSplit(e.split) && e.date >= f && e.date <= t && !e.fixedCostId; }).reduce(function(s, e){ return s + Number(e.amount || 0); }, 0); };
+          var day = 86400000, t0 = new Date(Date.now() + 9 * 3600000), a1 = new Date(t0.getTime() - 6 * day), b2 = new Date(t0.getTime() - 7 * day), b1 = new Date(t0.getTime() - 13 * day);
+          var thisW = sumRange(a1, t0), prevW = sumRange(b1, b2);
+          if (thisW || prevW) {
+            var d2 = document.createElement("div"); d2.className = "notice blue";
+            var diff = thisW - prevW;
+            d2.innerHTML = '<div class="nt">📅 直近7日の変動費の支出は ' + yen(thisW) + '（その前の7日より ' + (diff >= 0 ? yen(diff) + ' 多い' : yen(-diff) + ' 少ない') + '）です。</div><button>OK</button>';
+            d2.querySelector("button").addEventListener("click", function(){ lsSet("kakeibo_wk", wk); d2.remove(); }); el.appendChild(d2);
+          }
+        }
+      }
+    } catch(e) { console.error(e); }
+  };
+  (function(){
+    var pane = document.getElementById("pane-settings"); if (!pane) return;
+    var dayOpts = function(def){ var o = ""; for (var i = 1; i <= 28; i++) o += '<option value="' + i + '"' + (i === def ? " selected" : "") + '>' + i + '日</option>'; return o + '<option value="0">末日</option>'; };
+    var c = document.createElement("div"); c.className = "card"; c.id = "ccCard";
+    c.innerHTML = '<h3>💳 クレジットカード</h3><p class="stat-sub" style="margin-bottom:8px;">カードごとに締め日・支払日・引き落とし口座を決めておくと、入力画面でカードを選ぶだけで、引き落とし日に口座の残高へ反映できます（反映は確認ボタンを押したときだけです）。</p><div id="ccList"></div>'
+      + '<div class="grid-2"><label class="field"><span>カード名</span><input type="text" id="ccName" placeholder="例）楽天カード"></label><label class="field"><span>持ち主</span><select id="ccOwner"><option value="">家族（共通）</option><option value="夫">夫</option><option value="妻">妻</option></select></label></div>'
+      + '<div class="grid-2"><label class="field"><span>締め日</span><select id="ccClose">' + dayOpts(15) + '</select></label><label class="field"><span>支払日</span><select id="ccPay">' + dayOpts(10) + '</select></label></div>'
+      + '<div class="grid-2"><label class="field"><span>支払い月（締め月から）</span><select id="ccMon"><option value="1">翌月</option><option value="2">翌々月</option><option value="0">同じ月</option></select></label><label class="field"><span>引き落とし口座</span><select id="ccAcc"></select></label></div>'
+      + '<button class="ghost" id="ccAdd" style="width:100%;">カードを追加</button><h3 style="margin-top:16px;">これからの引き落とし</h3><div id="ccDue"></div>';
+    pane.insertBefore(c, pane.children[2] || null);
+    document.getElementById("ccOwner").value = myRole();
+    document.getElementById("ccAdd").addEventListener("click", function(){
+      var n = document.getElementById("ccName").value.trim(); if (!n) { showToast("カード名を入れてください"); return; }
+      var ow = document.getElementById("ccOwner").value;
+      if (!canEditSplit(ow)) { denyToast(); return; }
+      settings.cards = (settings.cards || []).concat([{ id: uid(), name: n, owner: ow, close: Number(document.getElementById("ccClose").value), pay: Number(document.getElementById("ccPay").value), payMon: Number(document.getElementById("ccMon").value), accountId: document.getElementById("ccAcc").value }]).slice(-12);
+      persistSettings(); document.getElementById("ccName").value = ""; renderCards(); renderKeypad(); showToast("カードを追加しました");
+    });
+    renderCards();
+  })();
+  var _rlCc = renderLedger; renderLedger = function(){ _rlCc.apply(this, arguments); try { renderCards(); } catch(e){} };
+
+  // --- ライフイベントの例 ---
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest && ev.target.closest("[data-evtpl]"); if (!b) return;
+    var p = b.dataset.evtpl.split("|");
+    document.getElementById("evName").value = p[0]; document.getElementById("evAge").value = p[1]; document.getElementById("evAmt").value = p[2]; document.getElementById("evKind").value = p[3];
+  });
+
+  // --- ライフプラン表 ---
+  function lpGet(){ var l = settings.lp || {}; return { retire: l.retire || 65, pAge: l.pAge || 65, pension: l.pension === undefined ? 220000 : l.pension, after: l.after || 0 }; }
+  function renderLifePlan(){
+    var host = document.getElementById("lpTable"); if (!host) return;
+    var l = lpGet(), box = document.getElementById("lpCard");
+    if (box.dataset.l !== "1") { document.getElementById("lpRetire").value = l.retire; document.getElementById("lpPAge").value = l.pAge; document.getElementById("lpPension").value = l.pension; document.getElementById("lpAfter").value = l.after || ""; box.dataset.l = "1"; }
+    var age = Number(document.getElementById("fireAge").value) || 0, bal = Number(document.getElementById("fireAssets").value) || 0, spend = Number(document.getElementById("fireSpend").value) || 0;
+    var rate = Number(document.getElementById("fireRate").value) || 0, save_ = Number(document.getElementById("fireSave").value) || 0;
+    var after = l.after || spend, yr = new Date().getFullYear(), hA = ageOf(birthOf("夫")), wA = ageOf(birthOf("妻")), rows = "", dep = null, atRetire = null;
+    for (var y = 0; age + y <= 95; y++) {
+      var a = age + y, ev = lifeEventDelta(a), gain = bal * rate / 100, flow, tag = "";
+      if (a < l.retire) flow = save_; else flow = -after + (a >= l.pAge ? l.pension * 12 : 0);
+      if (a === l.retire) { tag = "退職"; atRetire = bal + gain + flow + ev; }
+      if (a === l.pAge) tag += (tag ? "・" : "") + "年金開始";
+      bal = bal + gain + flow + ev;
+      if (bal < 0 && dep === null) dep = a;
+      var at = (hA !== null || wA !== null) ? ((hA !== null ? "夫" + (hA + y) : "") + (hA !== null && wA !== null ? " / " : "") + (wA !== null ? "妻" + (wA + y) : "")) : (a + "歳");
+      var evs = (settings.lifeEvents || []).filter(function(e){ return Number(e.age) === a; }).map(function(e){ return e.name; }).join("、");
+      rows += '<tr' + (bal < 0 ? ' class="lp-neg"' : '') + '><td>' + (yr + y) + '</td><td>' + at + '</td><td class="num">' + (flow >= 0 ? "+" : "−") + yen(Math.abs(flow)).replace("¥", "") + '</td><td class="num">' + (ev ? (ev >= 0 ? "+" : "−") + yen(Math.abs(ev)).replace("¥", "") : "") + '</td><td class="num">' + yen(gain).replace("¥", "") + '</td><td class="num"><b>' + yen(bal).replace("¥", "") + '</b></td><td>' + [tag, evs].filter(Boolean).join("・") + '</td></tr>';
+    }
+    host.innerHTML = '<table class="lp-t"><thead><tr><th>年</th><th>年齢</th><th>貯蓄(+)/取崩し(−)</th><th>イベント</th><th>運用益</th><th>資産残高</th><th>メモ</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    document.getElementById("lpSummary").innerHTML = '<div class="result-line"><span>退職時（' + l.retire + '歳）の資産</span><span class="rl-v">' + (atRetire === null ? "—" : yen(atRetire)) + '</span></div><div class="result-line total"><span>資産が尽きる年齢</span><span class="rl-v">' + (dep === null ? "95歳まで持つ見込み" : dep + "歳") + '</span></div>';
+  }
+  var _rfLp = runFire; runFire = function(){ _rfLp.apply(this, arguments); try { renderLifePlan(); } catch(e) { console.error(e); } };
+  ["lpRetire", "lpPAge", "lpPension", "lpAfter"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", function(){
+      settings.lp = { retire: Number(document.getElementById("lpRetire").value) || 65, pAge: Number(document.getElementById("lpPAge").value) || 65, pension: Number(document.getElementById("lpPension").value) || 0, after: Number(document.getElementById("lpAfter").value) || 0 };
+      persistSettings(); renderLifePlan();
+    });
+  });
+  renderLifePlan();
+  // --- 変更履歴から元に戻す ---
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest && ev.target.closest("[data-hrestore]"); if (!b) return;
+    var h = (data.history || []).find(function(x){ return String(x.at) === b.dataset.hrestore; }); if (!h || !h.ent) return;
+    addLedger(Object.assign({}, h.ent), function(){ lsSet("kakeibo_hr_" + h.at, "1"); showToast("削除した記録を元に戻しました"); renderHistory(); });
+  });
   function renderSearch(){
     var inp = document.getElementById("lgSearch"), out = document.getElementById("lgSearchOut"); if (!inp || !out) return;
     var q = (inp.value || "").trim().toLowerCase();
