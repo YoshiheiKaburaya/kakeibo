@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793049061">
+<meta name="app-build" content="1793102322">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -336,6 +336,26 @@
   .kp-pad .kp-key:active { background:#E5DFD3; }
   .kp-pad .kp-key.op { color:#E8503F; background:#FFE9E5; } .kp-pad .kp-key.clr { color:#6B6475; background:#E9E4DA; }
   .kp-pad .kp-key.ok { background:var(--coral); color:#fff; }
+
+  .ring { --p:0; flex:0 0 52px; width:52px; height:52px; border-radius:50%; background:conic-gradient(var(--teal) calc(var(--p) * 1%), var(--line) 0); display:flex; align-items:center; justify-content:center; position:relative; }
+  .ring::before { content:""; position:absolute; inset:6px; background:var(--card); border-radius:50%; }
+  .ring span { position:relative; font-size:11.5px; font-weight:800; }
+  .kp-recent { display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:4px 0 2px; }
+  .kp-recent .rc-l { font-size:11px; color:var(--sub); }
+  .kp-recent button { background:var(--lav-soft); color:#5b4bb5; border:none; border-radius:999px; padding:5px 11px; font-size:12px; font-weight:700; cursor:pointer; }
+  .mom-row { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px dashed var(--line); font-size:13px; }
+  .mom-up { color:var(--coral-deep); font-weight:700; } .mom-down { color:#0C7A6E; font-weight:700; }
+  /* ダークモード */
+  :root[data-theme="dark"] { --bg:#17131E; --card:#221C2D; --ink:#F2EEF7; --sub:#A79EB3; --faint:#5a5068; --line:#372F45; --teal-soft:#14332F; --sun-soft:#3a3016; --lav-soft:#2c2745; --coral-soft:#3b211e; color-scheme: dark; }
+  :root[data-theme="dark"] input, :root[data-theme="dark"] select, :root[data-theme="dark"] textarea { background:#2B2437; }
+  :root[data-theme="dark"] .bs-col { background:#221C2D; } :root[data-theme="dark"] .bs-col + .bs-col { background:#1d2236; } :root[data-theme="dark"] .bs-liab { background:#22294a; } :root[data-theme="dark"] .bs-net { background:#2d3a6b; } :root[data-theme="dark"] .bs-wrap, :root[data-theme="dark"] .bs-col + .bs-col, :root[data-theme="dark"] .bs-r.sum, :root[data-theme="dark"] .bs-r.tot { border-color:#6b6585; }
+  :root[data-theme="dark"] .kp-cg.on { background:#3b211e; } :root[data-theme="dark"] .header.top, :root[data-theme="dark"] header.top { background:var(--bg); }
+  :root[data-theme="dark"] .kp-pad { background:#221C2D; box-shadow:none; } :root[data-theme="dark"] .kp-pad .kp-amount { color:#F2EEF7; } :root[data-theme="dark"] .kp-pad .kp-yen, :root[data-theme="dark"] .kp-pad .kp-calc { color:#A79EB3; }
+  :root[data-theme="dark"] .kp-pad .kp-key { background:#3A3247; color:#F2EEF7; } :root[data-theme="dark"] .kp-pad .kp-key:active { background:#4a4059; } :root[data-theme="dark"] .kp-pad .kp-key.op { background:#4a2f33; color:#FFB4A9; } :root[data-theme="dark"] .kp-pad .kp-key.clr { background:#2F283B; color:#B9B0C6; }
+  :root[data-theme="dark"] button.ghost, :root[data-theme="dark"] .gl-sign, :root[data-theme="dark"] .kp-rcbtn, :root[data-theme="dark"] .home-card { background:#2B2437; }
+  :root[data-theme="dark"] .split-summary .ss-box, :root[data-theme="dark"] .quick-add-panel { background:#2B2437; }
+  :root[data-theme="dark"] .notice { background:#3a3016; border-color:#6b5a22; }
+  :root[data-theme="dark"] .kp-recent button { background:#2c2745; color:#c9bff5; } :root[data-theme="dark"] .toast { background:#F2EEF7; color:#17131E; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -419,6 +439,7 @@
       </div>
 
       <div class="card accent-lav" data-lgsub-pane="chart" id="reportCard"><div class="table-nav"><button class="ghost small" id="rpPrev">◀</button><div class="table-nav-label" id="rpLabel">📋 月の振り返り</div><button class="ghost small" id="rpNext">▶</button><button class="ghost small" id="rpToday">今月</button></div><div id="reportBody"></div></div>
+      <div class="card" data-lgsub-pane="chart" id="momCard"><h3>📊 前の月との比べ</h3><p class="stat-sub">上の「振り返り」の月と、その前の月の支出を、カテゴリごとに比べます</p><div id="momBody"></div></div>
       <div class="card accent-teal" data-lgsub-pane="chart" id="plCard"><h3 id="plTitle">損益計算書（PL）</h3><p class="stat-sub">上の「振り返り」の月と連動します</p><div id="plBody"></div></div>
 
       <div class="card accent-sun" data-lgsub-pane="chart">
@@ -470,6 +491,8 @@
         <h3>合計（月額）</h3>
         <div class="big-stat coral"><span class="num" id="fixedTotal">¥0</span></div>
       </div>
+
+      <div class="card" id="fxReviewCard"><h3>🔍 固定費の見直し候補</h3><div id="fxReviewBody"></div></div>
 
       <div class="card" id="setAsideCard"><h3>🐖 年1回の支出の積立目安</h3><div id="setAsideBody"></div></div>
 
@@ -705,6 +728,9 @@
       <div class="card accent-lav">
         <h3>遺族年金の見込み額（概算）</h3>
         <p class="pane-note" style="margin-bottom:14px;">亡くなった方が厚生年金に加入していた場合の、遺族年金の見込み額を概算します。下の必要保障額の試算にそのまま反映できます。</p>
+        <label class="field"><span>誰が亡くなった場合？</span><select id="wpWho"><option value="夫">夫が亡くなった場合（妻が遺族）</option><option value="妻">妻が亡くなった場合（夫が遺族）</option></select></label>
+        <label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="wpAuto" checked><span style="margin:0;">生年月日と家計簿の収入から自動で入れる</span></label>
+        <p class="stat-sub" id="wpAutoInfo" style="margin:0 0 8px;"></p>
         <label class="field"><span>亡くなった方の厚生年金 加入月数</span><input type="number" id="wpKouseiMonths" value="180"></label>
         <label class="field"><span>厚生年金加入期間中の平均年収（円）</span><input type="number" id="wpAvgIncome" value="5000000" inputmode="numeric"></label>
         <label class="field"><span>18歳未満（高校卒業前）の子の人数</span><input type="number" id="wpChildren" value="1" min="0"></label>
@@ -716,6 +742,8 @@
           <div class="result-line"><span>中高齢寡婦加算（年額）</span><span class="rl-v" id="wpMidOut">¥0</span></div>
           <div class="result-line total"><span>遺族年金の見込み額（年額）</span><span class="rl-v" id="wpTotalOut">¥0</span></div>
         </div>
+        <p class="stat-sub" id="wpNote" style="margin-top:8px;"></p>
+        <div id="wpCompare" style="margin-top:10px;"></div>
         <button class="ghost" id="wpApply" style="width:100%; margin-top:12px;">この金額を下の必要保障額の試算に反映する</button>
         <p class="disclaimer">2024年度の制度・料率をもとにした簡易計算です。遺族基礎年金は原則、18歳未満の子がいる配偶者（または子）に支給されます。実際の受給要件・金額は日本年金機構にご確認ください。</p>
       </div>
@@ -808,6 +836,15 @@
         <h3>試算結果</h3>
         <div class="result-line"><span>FIREに必要な資産額</span><span class="rl-v" id="fireTarget">¥0</span></div>
         <div class="result-line total"><span>達成予測</span><span class="rl-v" id="fireResult">—</span></div>
+        <div class="result-line"><span>FIRE後の資産寿命</span><span class="rl-v" id="fireDraw">—</span></div>
+        <p class="stat-sub" id="fireDrawNote" style="margin-top:4px;"></p>
+      </div>
+      <div class="card" id="evCard"><h3>🎉 ライフイベント（大きな支出・収入）</h3>
+        <p class="stat-sub" style="margin-bottom:8px;">子ども誕生・住宅購入・車の買い替えなど。入れた年齢で資産が増減するものとして、下のグラフと達成予測に反映します。</p>
+        <div id="evList"></div>
+        <div class="grid-2"><label class="field"><span>名前</span><input type="text" id="evName" placeholder="例）住宅購入の頭金"></label><label class="field"><span>その年の年齢</span><input type="number" id="evAge" placeholder="例）35"></label></div>
+        <div class="grid-2"><label class="field"><span>金額（円）</span><input type="number" id="evAmt" inputmode="numeric" placeholder="例）5000000"></label><label class="field"><span>種類</span><select id="evKind"><option value="cost">支出（資産が減る）</option><option value="gain">収入（資産が増える）</option></select></label></div>
+        <button class="ghost" id="evAdd" style="width:100%;">追加する</button>
       </div>
       <div class="card"><h3>資産推移の予測</h3><div class="chart-box h200"><canvas id="chartFire"></canvas></div></div>
       <p class="disclaimer">この試算は簡易的なものです。実際にはインフレ、税金、相場の変動、支出の変化などにより結果は変わります。あくまで目安としてご利用ください。</p>
@@ -1277,6 +1314,9 @@
         insLivAuto: settings.insLivAuto !== false,
         penAuto: settings.penAuto !== false,
         penWho: settings.penWho || "",
+        wpWho: settings.wpWho || "夫",
+        lifeEvents: settings.lifeEvents || [],
+        wpAuto: settings.wpAuto !== false,
         penEx: settings.penEx || {},
         insLivRatio: settings.insLivRatio || 70,
         templates: settings.templates || []
@@ -1437,6 +1477,9 @@
           if (s && typeof s.insLivAuto === "boolean") settings.insLivAuto = s.insLivAuto;
           if (s && typeof s.penAuto === "boolean") settings.penAuto = s.penAuto;
           if (s && typeof s.penWho === "string" && s.penWho) settings.penWho = s.penWho;
+          if (s && typeof s.wpWho === "string" && s.wpWho) settings.wpWho = s.wpWho;
+          if (s && Array.isArray(s.lifeEvents)) settings.lifeEvents = s.lifeEvents;
+          if (s && typeof s.wpAuto === "boolean") settings.wpAuto = s.wpAuto;
           if (s && s.penEx && typeof s.penEx === "object") settings.penEx = s.penEx;
           if (s && typeof s.insLivRatio === "number") settings.insLivRatio = s.insLivRatio;
           settings.templates = (s && Array.isArray(s.templates)) ? clone(s.templates) : [];
@@ -1687,7 +1730,8 @@
   // カテゴリ「家族」だけは家族（共通・割り勘）が初期値。それ以外は自分。
   function defaultSplitFor(catName){ return catName === "家族" ? "共通" : myRole(); }
   // 相手（夫⇔妻）の分は、見るだけ。自分の分と家族（共通）の分だけ編集できる。
-  function canEditSplit(sp){ if (!synced) return true; var o = (sp === "夫" || sp === "妻") ? sp : "家族"; return o === "家族" || o === myRole(); }
+  var proxyAllow = false; // 代理入力（例外）のときだけ一時的に相手の分への記録を許す
+  function canEditSplit(sp){ if (!synced || proxyAllow) return true; var o = (sp === "夫" || sp === "妻") ? sp : "家族"; return o === "家族" || o === myRole(); }
   // 相手（夫⇔妻）の分は、合計の金額だけ見える。内訳（カテゴリ・記録）は見られない。
   function canSeeSplit(sp){ return canEditSplit(sp); }
   function canEditOwn(own){ return canEditSplit(ownToSplit(own)); }
@@ -1782,7 +1826,7 @@
       }
       var subTxt = e.subcategory ? ("・"+e.subcategory) : "";
       var wasteTag = e.wasteful ? '<span class="waste-tag">😅</span>' : '';
-      var lockTag = e._priv ? '<span class="lock-tag">🔒</span>' : '';
+      var lockTag = (e._priv ? '<span class="lock-tag">🔒</span>' : '') + (e.proxy ? '<span class="lock-tag">' + (e.by || '') + 'が代理入力</span>' : '');
       var accTxt = e.accountId ? " ・ 口座反映済" : "";
       return '<div class="row'+(canEditSplit(e.split) ? ' row-clickable' : '')+' tx-row" data-id="'+e.id+'">'
         + '<div class="rname"><span class="rtitle">'+(e.memo||e.category)+subTxt+'</span><span class="rmeta">'+e.date+accTxt+'</span></div>'
@@ -2256,7 +2300,7 @@
         var accTxt = e.accountId ? " ・ 口座反映済" : "";
         var subTxt = e.subcategory ? ("・"+e.subcategory) : "";
         var wasteTag = e.wasteful ? '<span class="waste-tag">😅無駄遣い</span>' : '';
-        var lockTag = e._priv ? '<span class="lock-tag">🔒</span>' : '';
+        var lockTag = (e._priv ? '<span class="lock-tag">🔒</span>' : '') + (e.proxy ? '<span class="lock-tag">' + (e.by || '') + 'が代理入力</span>' : '');
         var sign = e.type === 'income' ? '+' : (e.type === 'invest' ? '→' : '−');
         return '<div class="row row-clickable" data-id="'+e.id+'">'
           + '<div class="rname"><span class="rtitle">'+ (e.memo || (e.type==="invest" ? ("積立："+e.category) : e.category)) +'</span>'
@@ -3052,21 +3096,74 @@
   document.getElementById("simRun").addEventListener("click", runInvestSim);
 
   // ---------- Widow/Survivor pension ----------
-  function runWidowPension(){
-    var kouseiMonths = Math.max(300, Number(document.getElementById("wpKouseiMonths").value) || 0);
-    var avgIncome = Number(document.getElementById("wpAvgIncome").value) || 0;
-    var children = Number(document.getElementById("wpChildren").value) || 0;
-    var midAid = document.getElementById("wpMidAid").checked;
-    var wpKousei = (avgIncome/12) * (5.481/1000) * kouseiMonths * (3/4);
-    var wpKiso = children > 0 ? 816000 + 234800*Math.min(children,2) + 78300*Math.max(children-2,0) : 0;
-    var wpMid = (midAid && children === 0) ? 612000 : 0;
-    var total = wpKousei + wpKiso + wpMid;
-    document.getElementById("wpKisoOut").textContent = yen(wpKiso);
-    document.getElementById("wpKouseiOut").textContent = yen(wpKousei);
-    document.getElementById("wpMidOut").textContent = yen(wpMid);
-    document.getElementById("wpTotalOut").textContent = yen(total);
-    return total;
+  function wpAutoVals(who){
+    var out = { months: null, income: 0, children: null, notes: [] };
+    var b = birthOf(who), d = b ? new Date(b) : null;
+    if (d && !isNaN(d)) {
+      var st = new Date(d.getFullYear() + 22, d.getMonth(), d.getDate()), now = new Date();
+      out.months = Math.max(0, (now.getFullYear() - st.getFullYear()) * 12 + now.getMonth() - st.getMonth());
+    }
+    out.income = annualIncomeOf(who);
+    var ca = ageOf(birthOf("子"));
+    if (ca !== null) out.children = ca < 18 ? -1 : 0; // -1＝18歳未満の子あり（人数は手入力の値を使う）
+    return out;
   }
+  function wpCalc(who, months, income, children, midFlag){
+    var surv = who === "夫" ? "妻" : "夫", sa = ageOf(birthOf(surv)), notes = [];
+    var m = Math.max(300, months || 0);
+    var kousei = (income/12) * (5.481/1000) * m * (3/4);
+    var kiso = children > 0 ? 816000 + 234800*Math.min(children,2) + 78300*Math.max(children-2,0) : 0;
+    var mid = (who === "夫" && midFlag && children === 0) ? 612000 : 0;
+    if (surv === "夫" && children === 0 && sa !== null && sa < 55) { kousei = 0; notes.push("夫が遺族になる場合、子がいないと55歳未満では遺族厚生年金は受け取れません（55歳以上で、60歳から支給）。"); }
+    else if (surv === "夫" && children === 0) notes.push("夫が遺族厚生年金を受け取れるのは60歳からです（それまでは支給停止）。");
+    if (surv === "妻" && children === 0 && sa !== null && sa < 30) notes.push("妻が30歳未満で子がいない場合、遺族厚生年金は5年間だけの有期給付になります。");
+    if (surv === "妻" && children === 0 && sa !== null && sa >= 30 && sa < 40) notes.push("妻が40歳未満で子がいない場合、中高齢寡婦加算は付きません。");
+    return { kiso: kiso, kousei: kousei, mid: mid, total: kiso + kousei + mid, notes: notes, surv: surv, sa: sa };
+  }
+  function applyWidowAuto(){
+    var whoEl = document.getElementById("wpWho"), chk = document.getElementById("wpAuto"); if (!whoEl || !chk) return;
+    if (whoEl.dataset.l !== "1") { whoEl.value = settings.wpWho || "夫"; whoEl.dataset.l = "1"; }
+    var auto = settings.wpAuto !== false; chk.checked = auto;
+    var who = whoEl.value, M = document.getElementById("wpKouseiMonths"), A = document.getElementById("wpAvgIncome"), C = document.getElementById("wpChildren"), K = document.getElementById("wpMidAid"), info = document.getElementById("wpAutoInfo");
+    if (!auto) { [M, A].forEach(function(x){ x.readOnly = false; }); info.textContent = "自動入力はオフです。手入力してください。"; return; }
+    var v = wpAutoVals(who), n = [], surv = who === "夫" ? "妻" : "夫";
+    if (v.months !== null) { M.value = v.months; M.readOnly = true; n.push(who + "の厚生年金：22歳から今まで " + v.months + "ヶ月（300ヶ月未満は300ヶ月で計算されます）"); } else { M.readOnly = false; n.push("プロフィールに" + who + "の生年月日を入れると、加入月数が自動で入ります"); }
+    if (v.income > 0) { A.value = v.income; A.readOnly = true; n.push("平均年収：" + who + "の直近の収入から年換算で " + yen(v.income)); } else { A.readOnly = false; n.push("収入の記録（誰の分＝" + who + "）がないため、平均年収は手入力の値です"); }
+    if (v.children === 0) { C.value = 0; n.push("18歳未満の子：末子の生年月日から、いません"); }
+    else if (v.children === -1) { if (!(Number(C.value) >= 1)) C.value = 1; n.push("18歳未満の子：末子が18歳未満のため、1人以上（人数は変えられます）"); }
+    else n.push("18歳未満の子の人数は手入力です（プロフィールに末子の生年月日を入れると自動で判定します）");
+    var sa = ageOf(birthOf(surv)), kids = Number(C.value) || 0;
+    if (who === "夫") { if (sa !== null) { K.checked = sa >= 40 && sa < 65 && kids === 0; n.push("中高齢寡婦加算：妻（" + sa + "歳）が40〜65歳で子がいないとき付きます"); } }
+    else { K.checked = false; n.push("中高齢寡婦加算は、妻が遺族になる場合だけの制度です"); }
+    K.disabled = who === "妻";
+    info.innerHTML = n.join("<br>");
+  }
+  function runWidowPension(){
+    try { applyWidowAuto(); } catch(e) { console.error(e); }
+    var who = document.getElementById("wpWho").value;
+    var months = Number(document.getElementById("wpKouseiMonths").value) || 0;
+    var income = Number(document.getElementById("wpAvgIncome").value) || 0;
+    var children = Number(document.getElementById("wpChildren").value) || 0;
+    var r = wpCalc(who, months, income, children, document.getElementById("wpMidAid").checked);
+    document.getElementById("wpKisoOut").textContent = yen(r.kiso);
+    document.getElementById("wpKouseiOut").textContent = yen(r.kousei);
+    document.getElementById("wpMidOut").textContent = yen(r.mid);
+    document.getElementById("wpTotalOut").textContent = yen(r.total);
+    document.getElementById("wpNote").innerHTML = r.notes.join("<br>");
+    // 夫・妻どちらの場合も並べて見る
+    var cmp = ["夫", "妻"].map(function(w){
+      var v = wpAutoVals(w), mo = v.months !== null ? v.months : months, inc = v.income > 0 ? v.income : income;
+      var kids = v.children === 0 ? 0 : (children || (v.children === -1 ? 1 : 0));
+      var sv = w === "夫" ? "妻" : "夫", sa = ageOf(birthOf(sv)), mid = w === "夫" && sa !== null && sa >= 40 && sa < 65 && kids === 0;
+      var x = wpCalc(w, mo, inc, kids, mid);
+      return '<div class="rp-line"><span>' + w + 'が亡くなった場合（' + x.surv + 'が遺族）</span><b>年 ' + yen(x.total) + '（月 ' + yen(x.total / 12) + '）</b></div>';
+    }).join("");
+    document.getElementById("wpCompare").innerHTML = '<div class="stat-sub" style="font-weight:700;margin-bottom:2px;">夫婦で比べる（それぞれ自動の値で計算）</div>' + cmp;
+    return r.total;
+  }
+  document.getElementById("wpWho").addEventListener("change", function(){ updateFireSettings({ wpWho: this.value }); runWidowPension(); });
+  document.getElementById("wpAuto").addEventListener("change", function(){ updateFireSettings({ wpAuto: this.checked }); runWidowPension(); });
+  ["wpKouseiMonths","wpAvgIncome","wpChildren","wpMidAid"].forEach(function(id){ document.getElementById(id).addEventListener("change", function(){ runWidowPension(); }); });
   document.getElementById("wpRun").addEventListener("click", runWidowPension);
   document.getElementById("wpApply").addEventListener("click", function(){
     var total = runWidowPension();
@@ -3259,13 +3356,14 @@
     document.getElementById("fireTarget").textContent = yen(target);
     var balance = assets, series = [balance], labels = [String(age)], achievedYear = null;
     for (var y=1; y<=60; y++){
-      balance = balance * (1 + rate/100) + save_;
+      balance = balance * (1 + rate/100) + save_ + lifeEventDelta(age + y);
       series.push(balance); labels.push(String(age + y));
       if (achievedYear === null && balance >= target) achievedYear = y;
       if (achievedYear !== null && y >= achievedYear + 3) break;
     }
     var resultEl = document.getElementById("fireResult");
     resultEl.textContent = achievedYear === null ? "60年以内に到達しません" : (achievedYear + "年後（" + (age+achievedYear) + "歳）に到達見込み");
+    try { renderFireDraw(age, achievedYear, series, spend, rate); } catch(e) { console.error(e); }
     try {
       var ctx = document.getElementById("chartFire").getContext("2d");
       if (chartFire) chartFire.destroy();
@@ -3538,13 +3636,16 @@
   }
   document.getElementById("dupFindBtn").addEventListener("click", renderDupList);
 
-  function showUndoToast(msg, undo){
+  function showUndoToast(msg, undo, edit){
     var t = document.createElement("div"); t.className = "toast show"; t.style.pointerEvents = "auto"; t.style.display = "flex"; t.style.alignItems = "center"; t.style.gap = "12px";
     var sp = document.createElement("span"); sp.textContent = msg;
     var b = document.createElement("button"); b.textContent = "取り消す"; b.style.cssText = "background:#fff;color:#2B2433;border:none;border-radius:999px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer;";
     var gone = false, rm = function(){ if (gone) return; gone = true; t.classList.remove("show"); setTimeout(function(){ t.remove(); }, 300); };
     b.addEventListener("click", function(){ try { undo(); } catch(e) {} rm(); showToast("取り消しました"); });
-    t.appendChild(sp); t.appendChild(b); document.body.appendChild(t); setTimeout(rm, 6500);
+    var bs = "background:#fff;color:#2B2433;border:none;border-radius:999px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer;";
+    t.appendChild(sp);
+    if (edit) { var be = document.createElement("button"); be.textContent = "変更"; be.style.cssText = bs; be.addEventListener("click", function(){ rm(); try { edit(); } catch(e) {} }); t.appendChild(be); }
+    t.appendChild(b); document.body.appendChild(t); setTimeout(rm, 8000);
   }
   function showToast(msg){
     var t = document.createElement("div");
@@ -3697,11 +3798,13 @@
     var val = kpCalc(kp.expr);
     if (!isFinite(val) || val <= 0) { showToast("金額を入力してください"); return; }
     if (!kp.cat) { showToast("カテゴリを選んでください"); return; }
-    if (!canEditSplit(kp.split)) { denyToast(); return; }
+    var kpProxy = !!kp.proxy && synced && (kp.split === "夫" || kp.split === "妻") && kp.split !== myRole();
+    proxyAllow = kpProxy;
+    if (!canEditSplit(kp.split)) { proxyAllow = false; denyToast(); return; }
     var cats = catsFor(kp.type, splitLabel(kp.split));
     var catObj = cats.find(function(c){ return c.name === kp.cat; });
     var q = kp.quad || catQuad(catObj);
-    var saved = { cat: kp.cat, type: kp.type };
+    var saved = { cat: kp.cat, type: kp.type }, kp0 = { split: kp.split };
     var kpPriv = !!kp.priv && canPrivate();
     var kpEnt = {
       date: kp.date || todayStr(), type: kp.type, category: kp.cat, subcategory: kp.sub || "", amount: val,
@@ -3709,12 +3812,22 @@
       wasteful: kp.type === "expense" && !!kp.waste, quadrant: kp.type === "expense" ? Number(q) : undefined,
       accountId: kp.account || "", private: !!kp.priv, memo: (kp.memo || "").trim()
     };
-    addLedger(kpEnt, function(id){ if (!id) { showToast(saved.cat + " " + yen(val) + " を記録しました"); return; } var snap = Object.assign({}, kpEnt, { id: id, _priv: kpPriv }); showUndoToast(saved.cat + " " + yen(val) + " を記録しました", function(){ deleteLedger(snap); }); });
+    var dupKey = [kp.date || todayStr(), kp.type, kp.cat, val, kp.split].join("|");
+    if (kp.dupOk !== dupKey && data.ledger.some(function(e){ return !e._hidden && e.by === myRole() && e.date === (kp.date || todayStr()) && e.type === kp.type && e.category === kp.cat && Number(e.amount) === val && (e.split || "共通") === kp.split && (Date.now() - (e.at || 0)) < 5 * 60000; })) {
+      kp.dupOk = dupKey; proxyAllow = false; showToast("さっきと同じ記録があります。もう一度押すと記録します"); return;
+    }
+    kp.dupOk = null;
+    var kpExtra = "";
+    if (kp.type === "expense" && !kpProxy) { try { var prevC = monthStats((kp.date || todayStr()).slice(0, 7)).cats[kp.cat] || 0; kpExtra = "（今月の" + kp.cat + " 計" + yen(prevC + val) + "）"; } catch(e) {} }
+    if (kpProxy) kpEnt.proxy = true;
+    addLedger(kpEnt, function(id){ if (kpProxy) { showToast(kp0.split + "の分として " + saved.cat + " " + yen(val) + " を記録しました（相手の画面で見られます）"); return; } try { if (navigator.vibrate) navigator.vibrate(12); } catch(e) {} if (!id) { showToast(saved.cat + " " + yen(val) + " を記録しました" + kpExtra); return; } var snap = Object.assign({}, kpEnt, { id: id, _priv: kpPriv }); showUndoToast(saved.cat + " " + yen(val) + " を記録しました" + kpExtra, function(){ deleteLedger(snap); }, function(){ var dt = kpEnt.date || todayStr(); calMonth = dt.slice(0,7); calSel = parseInt(dt.slice(8,10), 10); editingLedgerId = id; showLgSub("calendar"); setTimeout(function(){ var r = document.querySelector("#calBody .row-editing"); if (r && r.scrollIntoView) r.scrollIntoView({ block: "center" }); }, 150); }); });
+    proxyAllow = false; 
     kp.expr = ""; kp.memo = ""; kp.waste = false; kp.quad = null; rcStatus = "";
     renderKeypad();
   }
   function renderKeypad(){
     var el = document.getElementById("kpBody"); if (!el) return;
+    proxyAllow = !!kp.proxy && synced;
     if (!kp.split) kp.split = defaultSplitFor("");
     if (!canEditSplit(kp.split)) kp.split = "共通";
     if (!kp.payer) kp.payer = myRole();
@@ -3730,11 +3843,12 @@
     var line = function(lab, inner){ return '<div class="kp-line"><span class="kp-lab2">' + lab + '</span><div class="kp-val">' + inner + '</div></div>'; };
     var accSel = '<select id="kpAcc"><option value="">指定しない</option>' + accounts.map(function(a){ return '<option value="'+a.id+'"'+(a.id===kp.account?' selected':'')+'>'+a.name+'</option>'; }).join("") + '</select>';
     var html = '<div class="kp-top"><div class="kp-types"><button data-kptype="expense" class="'+(kp.type==="expense"?'on':'')+'">支出</button><button data-kptype="income" class="'+(kp.type==="income"?'on':'')+'">収入</button></div>'
-      + '<label class="kp-rcbtn kp-rcmini">📷 レシート<input type="file" id="kpRcFile" accept="image/*" style="display:none"></label></div>'
+      + '</div>'
       + budSlimHtml()
       + (rcStatus ? '<div id="kpRcSt" class="stat-sub" style="margin:0 0 6px;">'+rcStatus+'</div>' : '<span id="kpRcSt"></span>')
       + '<div class="kp-pair">' + line("日付", '<input type="date" id="kpDate" value="'+kp.date+'"><button type="button" class="ghost small" id="kpToday" style="margin:0 0 0 4px;padding:3px 8px;">今日</button>')
       + line("カテゴリ", '<button type="button" class="kp-catbtn" data-kpcatopen="1">' + (kp.cat ? catIcon(kp.cat) + ' ' + kp.cat : '選択') + (kp.sub ? '・' + kp.sub : '') + ' ▾</button>') + '</div>'
+      + recentCatsHtml()
       + (kp.catOpen ? '<div class="kp-catgrid">' + cats.map(function(c){ return '<button type="button" class="kp-cg' + (c.name===kp.cat?' on':'') + '" data-kpcat="'+c.name+'"><span>'+catIcon(c.name)+'</span>'+c.name+'</button>'; }).join("") + '</div>' : '')
       + '<div class="kp-pair">' + line(kp.type === "expense" ? "支出元" : "入金先", accSel)
       + (kp.type === "expense" ? line("払う人", '<div class="kp-pills">' + ["夫","妻"].map(function(o){ return pill("kppayer", o, o, kp.payer===o, false); }).join("") + '</div>') : '') + '</div>'
@@ -3743,7 +3857,7 @@
       + '<button type="button" class="ghost small" id="kpMore" style="margin:4px 0 6px;">'+(kp.more?'▾':'▸')+' さらに詳しく（小カテゴリ・メモなど）</button>'
       + (kp.more ? ('<div class="kp-more">'
         + '<label class="field"><span>小カテゴリ</span><select id="kpSubSel"><option value="">指定なし</option>'+subs.map(function(x){ return '<option value="'+x+'"'+(x===kp.sub?' selected':'')+'>'+x+'</option>'; }).join("")+'</select></label>'
-        + '<label class="field"><span>メモ（任意）</span><input type="text" id="kpMemo" value="'+(kp.memo||"").replace(/"/g,"&quot;")+'" placeholder="例）スーパー"></label>'
+        + '<label class="field"><span>メモ（任意）</span><input type="text" id="kpMemo" list="kpMemoList" autocomplete="off" value="'+(kp.memo||"").replace(/"/g,"&quot;")+'" placeholder="例）スーパー"><datalist id="kpMemoList">' + memoSuggestHtml() + '</datalist></label>'
         + (kp.type === "expense" ? ('<label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="kpWaste"'+(kp.waste?' checked':'')+'><span style="margin:0;">😅 無駄遣いだったかも</span></label>') : '')
         + (canPrivate() ? '<label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="kpPriv"'+(kp.priv?' checked':'')+'><span style="margin:0;">🔒 配偶者に見せない（自分だけ）</span></label>' : '')
         + '</div>') : '')
@@ -3751,7 +3865,7 @@
       + '<div class="kp-keys">'
       + ["7","8","9","⌫","4","5","6","÷","1","2","3","×","0","00","−","+"].map(function(k){ return '<button type="button" class="kp-key'+("÷×−+".indexOf(k)>=0?' op':(k==="⌫"?' clr':''))+'" data-k="'+k+'">'+k+'</button>'; }).join("")
       + '<button type="button" class="kp-key clr" data-k="C">C</button><button type="button" class="kp-key ok" id="kpOk">OK　記録する</button></div></div>';
-    el.innerHTML = html;
+    el.innerHTML = html; proxyAllow = false;
     el.querySelectorAll("[data-kptype]").forEach(function(b){ b.addEventListener("click", function(){ kp.type = b.dataset.kptype; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kpsplit]").forEach(function(b){ b.addEventListener("click", function(){ kp.split = b.dataset.kpsplit; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kppayer]").forEach(function(b){ b.addEventListener("click", function(){ kp.payer = b.dataset.kppayer; renderKeypad(); }); });
@@ -3764,6 +3878,7 @@
     bind("#kpSubSel", function(ev){ kp.sub = ev.target.value; });
     bind("#kpAcc", function(ev){ kp.account = ev.target.value; });
     bind("#kpMemo", function(ev){ kp.memo = ev.target.value; }, "input");
+    bind("#kpMemo", function(ev){ var m = lastByMemo(ev.target.value, kp.type); if (m && m.category && m.category !== kp.cat) { kp.memo = ev.target.value; kp.cat = m.category; kp.sub = m.subcategory || ""; renderKeypad(); } });
     el.querySelectorAll("[data-kpquad]").forEach(function(b){ b.addEventListener("click", function(){ kp.quad = Number(b.dataset.kpquad); renderKeypad(); }); });
     bind("#kpWaste", function(ev){ kp.waste = ev.target.checked; });
     bind("#kpPriv", function(ev){ kp.priv = ev.target.checked; });
@@ -4108,7 +4223,7 @@
   var _raK = renderAssets; renderAssets = function(){ _raK.apply(this, arguments); try { applyAssetKind(); } catch(e){} };
 
   var setGroup = "個人";
-  var SET_GROUPS = { "個人": ["プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "共有": ["夫婦での共有", "非公開分"], "データ": ["バージョン", "バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
+  var SET_GROUPS = { "個人": ["表示テーマ", "プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "共有": ["夫婦での共有", "非公開分"], "データ": ["バージョン", "バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
   function applySettingsGroup(){
     var pane = document.getElementById("pane-settings"); if (!pane) return;
     var bar = document.getElementById("setSubBar");
@@ -4140,6 +4255,148 @@
     });
     return h;
   }
+
+  // ===== v31 =====
+  function recentCatsHtml(){
+    var since = new Date(Date.now() - 45*86400000).toISOString().slice(0,10), m = {};
+    data.ledger.forEach(function(e){ if (e.type === kp.type && e.date >= since && e.category && !e.fixedCostId && !e._hidden && canEditSplit(e.split)) m[e.category] = (m[e.category]||0) + 1; });
+    var top = Object.keys(m).sort(function(a,b){ return m[b] - m[a]; }).filter(function(c){ return c !== kp.cat; }).slice(0, 3);
+    var cats = catsFor(kp.type, splitLabel(kp.split)); top = top.filter(function(c){ return cats.some(function(x){ return x.name === c; }); });
+    return (kp.proxy && synced ? '<div class="stat-sub" style="margin:2px 0 4px;color:var(--coral-deep);">' + (myRole() === '夫' ? '妻' : '夫') + 'の分として記録します。内容は' + (myRole() === '夫' ? '妻' : '夫') + 'の画面で見られ、あなたの画面には合計だけ反映されます。何件でも続けて入れられます。終わったら下のボタンをもう一度押して戻してください。</div>' : '') + '<div class="kp-recent">' + (top.length ? '<span class="rc-l">最近</span>' + top.map(function(c){ return '<button type="button" data-kpcat="' + c + '">' + c + '</button>'; }).join("") : '') + (synced ? '<button type="button" id="kpProxy" style="background:' + (kp.proxy ? 'var(--coral)' : 'var(--sun-soft)') + ';color:' + (kp.proxy ? '#fff' : 'var(--ink)') + ';">👥 ' + (myRole() === '夫' ? '妻' : '夫') + 'の代わりに入力' + (kp.proxy ? '（中・押すと終了）' : '') + '</button>' : '') + '<button type="button" id="kpRepeat" style="background:var(--teal-soft);color:#0C7A6E;">↻ 直前と同じ</button></div>';
+  }
+  function lastByMemo(memo, type){
+    memo = (memo || "").trim(); if (!memo) return null; var best = null;
+    data.ledger.forEach(function(e){ if (e.memo === memo && e.type === type && !e._hidden && (!best || (e.date||"") >= (best.date||""))) best = e; });
+    return best;
+  }
+  function memoSuggestHtml(){
+    var seen = {}, out = [];
+    data.ledger.slice().sort(function(a,b){ return (b.date||"").localeCompare(a.date||""); }).forEach(function(e){ if (e.memo && e.type === kp.type && !e._hidden && canSeeSplit(e.split) && !seen[e.memo] && out.length < 40) { seen[e.memo] = 1; out.push(e.memo); } });
+    return out.map(function(x){ return '<option value="' + String(x).replace(/"/g, "&quot;") + '">'; }).join("");
+  }
+  document.addEventListener("click", function(ev){
+    var pb = ev.target.closest && ev.target.closest("#kpProxy");
+    if (pb) { var other = myRole() === "夫" ? "妻" : "夫"; kp.proxy = !kp.proxy; if (kp.proxy) { kp.split = other; kp.payer = other; } else { kp.split = defaultSplitFor(""); kp.payer = myRole(); } kp.cat = ""; kp.sub = ""; renderKeypad(); return; }
+    var b = ev.target.closest && ev.target.closest("#kpRepeat"); if (!b) return;
+    var me = myRole(), mine = data.ledger.filter(function(e){ return (e.type === "expense" || e.type === "income") && !e.fixedCostId && !e._hidden && canEditSplit(e.split) && (e.by === me || !e.by); }).sort(function(a,c){ return ((c.at||0) - (a.at||0)) || (c.date||"").localeCompare(a.date||""); });
+    var l = mine[0]; if (!l) { showToast("まだ記録がありません"); return; }
+    kp.type = l.type; kp.split = l.split || "共通"; kp.cat = l.category; kp.sub = l.subcategory || ""; kp.memo = l.memo || ""; kp.payer = l.payer || kp.payer; kp.account = l.accountId || ""; kp.expr = String(Math.round(l.amount || 0)); kp.date = todayStr(); kp.quad = l.quadrant || null;
+    renderKeypad(); showToast("直前の記録を入れました。日付は今日です");
+  });
+
+  // 前の月との比べ
+  function renderMoM(){
+    var el = document.getElementById("momBody"); if (!el) return;
+    var mk = reportMonth || currentMonthKey(), a = monthStats(mk).cats, b = monthStats(shiftMonthKey(mk, -1)).cats, keys = {};
+    Object.keys(a).concat(Object.keys(b)).forEach(function(k){ keys[k] = 1; });
+    var rows = Object.keys(keys).map(function(k){ return { k: k, now: a[k]||0, prev: b[k]||0, d: (a[k]||0) - (b[k]||0) }; }).filter(function(r){ return r.d !== 0; }).sort(function(x,y){ return Math.abs(y.d) - Math.abs(x.d); }).slice(0, 7);
+    if (!rows.length) { el.innerHTML = '<p class="empty">比べられる記録がまだありません</p>'; return; }
+    el.innerHTML = rows.map(function(r){ return '<div class="mom-row"><span>' + r.k + '　' + yen(r.now) + '</span><span class="' + (r.d > 0 ? "mom-up" : "mom-down") + '">' + (r.d > 0 ? "▲ +" : "▼ −") + yen(Math.abs(r.d)) + '</span></div>'; }).join("")
+      + '<p class="stat-sub" style="margin-top:6px;">▲は前の月より増えた支出、▼は減った支出です（前の月 ' + shiftMonthKey(mk, -1).replace("-", "年") + '月と比較）。</p>';
+  }
+  var _rpM = renderReport; renderReport = function(){ _rpM.apply(this, arguments); try { renderMoM(); } catch(e){} };
+
+  // 使いすぎアラート
+  function paceInfo(sc){
+    var b = budgetOf(sc); if (!b || !b.total) return null;
+    var mk = currentMonthKey(), now = new Date(), day = now.getDate(), dim = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    var sp = spentFor(sc, mk), proj = day >= 3 ? Math.round(sp / day * dim) : sp;
+    return { sc: sc, total: b.total, spent: sp, proj: proj, over: proj > b.total, day: day };
+  }
+  var _bsh = budSlimHtml; budSlimHtml = function(){
+    var h = _bsh();
+    ["家族", myRole()].filter(function(v,i,a){ return a.indexOf(v) === i; }).forEach(function(sc){ var p = paceInfo(sc); if (p && p.over && p.spent < p.total) h += '<div style="font-size:11px;color:var(--coral-deep);margin:1px 0;">⚠ ' + sc + '：このペースだと月末に約' + yen(p.proj) + '（予算超過の見込み）</div>'; });
+    return h;
+  };
+  var _rnP = renderNotice; renderNotice = function(){
+    _rnP.apply(this, arguments);
+    try {
+      var el = document.getElementById("noticeBar"); if (!el || lsGet("kakeibo_pace_off") === todayStr()) return;
+      var msgs = [];
+      ["家族", myRole()].filter(function(v,i,a){ return a.indexOf(v) === i; }).forEach(function(sc){ var p = paceInfo(sc); if (p && p.day >= 5 && p.over && p.spent < p.total) msgs.push(sc + 'の支出は今 ' + yen(p.spent) + '。このペースだと月末に約 ' + yen(p.proj) + '（予算 ' + yen(p.total) + ' を超える見込み）'); });
+      if (!msgs.length) return;
+      var d = document.createElement("div"); d.className = "notice"; d.innerHTML = '<div class="nt">⚠️ ' + msgs.join('<br>') + '</div><div class="settle-btns"><button class="ghost small" id="ntPaceOff">今日は非表示</button></div>';
+      el.appendChild(d); d.querySelector("#ntPaceOff").addEventListener("click", function(){ lsSet("kakeibo_pace_off", todayStr()); d.remove(); });
+    } catch(e) {}
+  };
+
+  // 固定費の見直し候補
+  function renderFxReview(){
+    var el = document.getElementById("fxReviewBody"); if (!el) return;
+    var list = data.fixedCosts.filter(function(f){ return f.type === "expense" && (f.frequency || "毎月") === "毎月" && canSeeSplit(f.owner || ""); }).sort(function(a,b){ return Number(b.amount||0) - Number(a.amount||0); });
+    if (!list.length) { el.innerHTML = '<p class="stat-sub">毎月の固定費を登録すると、金額の大きい順に見直しのヒントを出します。</p>'; return; }
+    var tot = list.reduce(function(s,f){ return s + Number(f.amount||0); }, 0);
+    var hint = function(f){ var t = (f.name || "") + " " + (f.category || "");
+      if (/サブスク|Netflix|Amazon|Spotify|YouTube|U-NEXT|Hulu|Disney|アプリ|会員|ジム/i.test(t)) return "使っていますか？ 使わない月が多いなら解約・一時停止で節約できます";
+      if (/携帯|スマホ|ネット|光|wifi|通信|格安/i.test(t)) return "格安プランや回線の見直しで下がることがあります";
+      if (/保険/.test(t)) return "保障内容が今の暮らしに合っているか、年1回見直すと安心です";
+      if (/電気|ガス|水道|光熱/.test(t)) return "契約プランの比較で下がることがあります";
+      if (/家賃|ローン|住居/.test(t)) return "金額が大きい分、更新時や借り換えの見直し効果が大きい項目です";
+      return ""; };
+    el.innerHTML = list.slice(0, 6).map(function(f){ var h = hint(f); return '<div class="mom-row" style="flex-direction:column;gap:2px;"><div style="display:flex;justify-content:space-between;"><span>' + ownBadge(f.owner) + f.name + '</span><b>月 ' + yen(f.amount) + '（年 ' + yen(Number(f.amount||0) * 12) + '）</b></div><div class="stat-sub" style="margin:0;">固定費の ' + Math.round(Number(f.amount||0) / tot * 100) + '%' + (h ? '　' + h : '') + '</div></div>'; }).join("");
+  }
+  var _rfR = renderFixedCosts; renderFixedCosts = function(){ _rfR.apply(this, arguments); try { renderFxReview(); } catch(e){} };
+
+  // 目標の達成予想
+  function monthlySaving(){
+    var cur = currentMonthKey(), keys = [], k = shiftMonthKey(cur, -1), first = null;
+    data.ledger.forEach(function(e){ if (e.date && (first === null || e.date.slice(0,7) < first)) first = e.date.slice(0,7); });
+    if (!first) return null;
+    for (var i = 0; i < 3 && k >= first; i++) { keys.push(k); k = shiftMonthKey(k, -1); }
+    if (!keys.length) return null;
+    var sum = 0; keys.forEach(function(mk){ var st = monthStats(mk); sum += st.inc - st.exp; });
+    return sum / keys.length;
+  }
+  function goalEta(g, cur){
+    var need = g.amount - cur; if (need <= 0) return "🎉 達成しています";
+    var sv = monthlySaving(); if (!(sv > 0)) return "今の貯蓄ペースがわかると、達成時期の予想が出ます";
+    var m = Math.ceil(need / sv), d = new Date(); d.setMonth(d.getMonth() + m);
+    return "📅 直近の貯蓄ペース（月 " + yen(sv) + "）だと、約 " + (m >= 12 ? Math.floor(m / 12) + "年" + (m % 12 ? (m % 12) + "ヶ月" : "") : m + "ヶ月") + "後（" + d.getFullYear() + "年" + (d.getMonth()+1) + "月ごろ）に達成";
+  }
+
+  // ライフイベント / FIRE後の資産寿命
+  function lifeEventDelta(a){ return (settings.lifeEvents || []).reduce(function(s, e){ return Number(e.age) === a ? s + (e.kind === "gain" ? 1 : -1) * Number(e.amount||0) : s; }, 0); }
+  function renderEvents(){
+    var el = document.getElementById("evList"); if (!el) return;
+    var ev = (settings.lifeEvents || []).slice().sort(function(a,b){ return a.age - b.age; });
+    el.innerHTML = ev.length ? ev.map(function(e){ return '<div class="row"><div class="rname"><span class="rtitle">' + e.name + '</span><span class="rmeta">' + e.age + '歳のとき</span></div><span class="ramount ' + (e.kind === "gain" ? "income" : "expense") + '">' + (e.kind === "gain" ? "+" : "−") + yen(e.amount).replace("¥", "") + '</span><span class="ractions"><button class="del" data-evdel="' + e.id + '">×</button></span></div>'; }).join("") : '<p class="empty">まだありません</p>';
+    el.querySelectorAll("[data-evdel]").forEach(function(b){ b.addEventListener("click", function(){ settings.lifeEvents = (settings.lifeEvents || []).filter(function(e){ return e.id !== b.dataset.evdel; }); persistSettings(); renderEvents(); runFire(); }); });
+  }
+  document.getElementById("evAdd").addEventListener("click", function(){
+    var n = document.getElementById("evName").value.trim(), a = Number(document.getElementById("evAge").value), m = Number(document.getElementById("evAmt").value);
+    if (!n || !(a > 0) || !(m > 0)) { showToast("名前・年齢・金額を入れてください"); return; }
+    settings.lifeEvents = (settings.lifeEvents || []).concat([{ id: uid(), name: n, age: a, amount: m, kind: document.getElementById("evKind").value }]).slice(-20);
+    persistSettings(); ["evName","evAge","evAmt"].forEach(function(i){ document.getElementById(i).value = ""; }); renderEvents(); runFire();
+  });
+  function renderFireDraw(age, achievedYear, series, spend, rate){
+    var el = document.getElementById("fireDraw"), nt = document.getElementById("fireDrawNote"); if (!el) return;
+    if (achievedYear === null) { el.textContent = "—"; nt.textContent = "FIRE達成の見込みがないため、取り崩しの試算はありません。"; return; }
+    var bal = series[achievedYear], a0 = age + achievedYear, last = null;
+    for (var a = a0 + 1; a <= 100; a++) { bal = bal * (1 + rate/100) - spend + lifeEventDelta(a); if (bal < 0) { last = a - 1; break; } }
+    el.textContent = last === null ? "100歳まで持つ見込み" : (last + "歳まで");
+    nt.textContent = "FIRE（" + a0 + "歳）から、毎年 " + yen(spend) + " を使い、残りを年利 " + rate + "% で運用した場合の目安です。税金・インフレは入れていません。";
+  }
+  renderEvents();
+  var _rlG = renderLedger; renderLedger = function(){ _rlG.apply(this, arguments); };
+
+  // 表示テーマ
+  function applyTheme(t){
+    var dark = t === "dark" || (t !== "light" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = dark ? "#17131E" : "#FFFCF5";
+  }
+  (function(){
+    var t = lsGet("kakeibo_theme") || "auto"; applyTheme(t);
+    try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(){ if ((lsGet("kakeibo_theme") || "auto") === "auto") applyTheme("auto"); }); } catch(e) {}
+    var pane = document.getElementById("pane-settings"); if (!pane) return;
+    var c = document.createElement("div"); c.className = "card"; c.id = "themeCard";
+    c.innerHTML = '<h3>🌙 表示テーマ</h3><p class="stat-sub" style="margin-bottom:8px;">夜に見やすいダークモードにできます。「自動」は端末の設定に合わせます。</p><div class="scope-bar" id="themeBar"><button data-th="auto">自動</button><button data-th="light">ライト</button><button data-th="dark">ダーク</button></div>';
+    pane.insertBefore(c, pane.children[2] || null);
+    var mark = function(){ var cur = lsGet("kakeibo_theme") || "auto"; c.querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.th === cur); }); };
+    mark();
+    c.querySelectorAll("button").forEach(function(b){ b.addEventListener("click", function(){ lsSet("kakeibo_theme", b.dataset.th); applyTheme(b.dataset.th); mark(); }); });
+    try { applySettingsGroup(); } catch(e) {}
+  })();
   function renderSearch(){
     var inp = document.getElementById("lgSearch"), out = document.getElementById("lgSearchOut"); if (!inp || !out) return;
     var q = (inp.value || "").trim().toLowerCase();
@@ -4348,10 +4605,10 @@
     var sl = { "全体": "夫婦合計", "夫": "夫", "妻": "妻", "共通": "家族" }, kl = { invest_cash: "現金・預金＋投資", net: "純資産", invest: "投資" };
     el.innerHTML = gs.map(function(g){
       var cur = assetSumFor(g.scope, g.kind), pct = g.amount > 0 ? Math.min(100, Math.round(cur / g.amount * 100)) : 0;
-      var extra = "";
+      var extra = "", eta = goalEta(g, cur);
       if (g.date) { var days = Math.ceil((new Date(g.date) - new Date()) / 86400000); extra = days > 0 ? "・期限まであと" + days + "日（月あたり約 " + yen(Math.max(0, Math.round((g.amount - cur) / Math.max(1, days / 30)))) + " 必要）" : "・期限を過ぎました"; }
-      return '<div class="goal-row"><div class="hm-top"><span>' + g.name + '</span><span>' + pct + '%</span></div><div class="hm-bar"><div class="hm-fill" style="width:' + pct + '%"></div></div>'
-        + '<div class="hm-sub">' + yen(cur) + ' / ' + yen(g.amount) + '（' + sl[g.scope] + '・' + kl[g.kind] + '）' + extra + ' <button class="ghost small" data-delgoal="' + g.id + '" style="margin-left:6px;">削除</button></div></div>';
+      return '<div class="goal-row" style="display:flex;gap:12px;align-items:center;"><div class="ring" style="--p:' + pct + '"><span>' + pct + '%</span></div><div style="flex:1;min-width:0;"><div class="hm-top"><span>' + g.name + '</span></div>'
+        + '<div class="hm-sub">' + yen(cur) + ' / ' + yen(g.amount) + '（' + sl[g.scope] + '・' + kl[g.kind] + '）' + extra + ' <button class="ghost small" data-delgoal="' + g.id + '" style="margin-left:6px;">削除</button>' + (eta ? '<br>' + eta : '') + '</div></div></div>';
     }).join("");
     el.querySelectorAll("[data-delgoal]").forEach(function(b){ b.addEventListener("click", function(){ settings.goals = (settings.goals||[]).filter(function(g){ return g.id !== b.dataset.delgoal; }); persistSettings(); renderGoals(); }); });
   }
@@ -4452,7 +4709,7 @@
     var chk = document.getElementById("penAuto"); if (!chk) return;
     var auto = settings.penAuto !== false; chk.checked = auto;
     var who = settings.penWho || myRole(); if (document.getElementById("penWho").value !== who || !document.getElementById("penWho").dataset.l) { document.getElementById("penWho").value = who; document.getElementById("penWho").dataset.l = "1"; penExLoad(); }
-    var ids = ["penKisoMonths","penKouseiMonths","penAvgIncome","wpAvgIncome"], info = document.getElementById("penAutoInfo");
+    var ids = ["penKisoMonths","penKouseiMonths","penAvgIncome"], info = document.getElementById("penAutoInfo");
     if (!auto) { ids.forEach(function(i){ document.getElementById(i).readOnly = false; }); info.textContent = "自動計算はオフです。手入力してください。"; return; }
     var n = [], a = ageOf(birthOf(who));
     if (a !== null && a >= 0) {
@@ -4465,9 +4722,6 @@
     var inc = annualIncomeOf(who);
     if (inc > 0) { document.getElementById("penAvgIncome").value = inc; document.getElementById("penAvgIncome").readOnly = true; n.push("平均年収：直近の" + who + "の収入から年換算で " + yen(inc)); }
     else { document.getElementById("penAvgIncome").readOnly = false; n.push("収入の記録（誰の分＝" + who + "）がないため、平均年収は手入力の値です"); }
-    var inc2 = Math.max(annualIncomeOf("夫"), annualIncomeOf("妻"));
-    var wp = document.getElementById("wpAvgIncome");
-    if (inc2 > 0) { wp.value = inc2; wp.readOnly = true; n.push("遺族年金の平均年収：夫婦の高い方（" + yen(inc2) + "）で計算"); } else wp.readOnly = false;
     info.innerHTML = n.join("<br>");
   }
   document.getElementById("penAuto").addEventListener("change", function(){ updateFireSettings({ penAuto: this.checked }); runPension(); try { runWidowPension(); } catch(e) {} });
