@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793133126">
+<meta name="app-build" content="1793181776">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -840,6 +840,8 @@
           <label class="field"><span>取り崩し率（年率 %）</span><input type="number" id="fireWithdraw" value="4" step="0.1"></label>
           <label class="field"><span>想定利回り（年率 %）</span><input type="number" id="fireRate" value="5" step="0.1"></label>
         </div>
+        <label class="field"><span>想定インフレ率（年率 %）</span><input type="number" id="fireInfl" value="2" step="0.1"></label>
+        <p class="stat-sub" style="margin:-4px 0 8px;">利回りからインフレ分を引いた「実質の利回り」で計算します。金額はすべて今のお金の価値で表示されます（0にするとインフレなし）。</p>
         <label class="field"><span>年間の追加貯蓄・投資額（円）</span><input type="number" id="fireSave" value="1200000" inputmode="numeric"></label>
         <button class="primary" id="fireRun">試算する</button>
       </div>
@@ -864,7 +866,7 @@
         <div class="grid-2"><label class="field"><span>老後の年金（月額・夫婦合計）</span><input type="number" id="lpPension" inputmode="numeric"></label><label class="field"><span>老後の年間支出（空欄＝今と同じ）</span><input type="number" id="lpAfter" inputmode="numeric"></label></div>
         <div id="lpSummary"></div>
         <div id="lpTable" style="overflow-x:auto; max-height:420px; overflow-y:auto; margin-top:8px;"></div>
-        <p class="stat-sub" style="margin-top:6px;">税金・インフレ・年金額の変化は入れていない簡易版です。</p>
+        <p class="stat-sub" style="margin-top:6px;">インフレは実質利回りで反映しています（金額は今のお金の価値）。税金・年金額の変化は入れていない簡易版です。</p>
       </div>
       <div class="card"><h3>資産推移の予測</h3><div class="chart-box h200"><canvas id="chartFire"></canvas></div></div>
       <p class="disclaimer">この試算は簡易的なものです。実際にはインフレ、税金、相場の変動、支出の変化などにより結果は変わります。あくまで目安としてご利用ください。</p>
@@ -1339,6 +1341,7 @@
         cards: settings.cards || [],
         cardPaid: settings.cardPaid || {},
         lp: settings.lp || {},
+        fireInfl: settings.fireInfl === undefined ? 2 : settings.fireInfl,
         wpAuto: settings.wpAuto !== false,
         penEx: settings.penEx || {},
         insLivRatio: settings.insLivRatio || 70,
@@ -1505,6 +1508,7 @@
           if (s && Array.isArray(s.cards)) settings.cards = s.cards;
           if (s && s.cardPaid && typeof s.cardPaid === "object") settings.cardPaid = s.cardPaid;
           if (s && s.lp && typeof s.lp === "object") settings.lp = s.lp;
+          if (s && typeof s.fireInfl === "number") settings.fireInfl = s.fireInfl;
           if (s && typeof s.wpAuto === "boolean") settings.wpAuto = s.wpAuto;
           if (s && s.penEx && typeof s.penEx === "object") settings.penEx = s.penEx;
           if (s && typeof s.insLivRatio === "number") settings.insLivRatio = s.insLivRatio;
@@ -3377,6 +3381,9 @@
     var spend = Number(document.getElementById("fireSpend").value) || 0;
     var withdraw = Number(document.getElementById("fireWithdraw").value) || 4;
     var rate = Number(document.getElementById("fireRate").value) || 0;
+    var inflEl = document.getElementById("fireInfl");
+    if (inflEl.dataset.l !== "1") { inflEl.value = settings.fireInfl === undefined ? 2 : settings.fireInfl; inflEl.dataset.l = "1"; }
+    var infl = Number(inflEl.value) || 0; rate = ((1 + rate/100) / (1 + infl/100) - 1) * 100;
     var save_ = Number(document.getElementById("fireSave").value) || 0;
     var target = withdraw > 0 ? spend / (withdraw/100) : 0;
     document.getElementById("fireTarget").textContent = yen(target);
@@ -4405,7 +4412,7 @@
     var bal = series[achievedYear], a0 = age + achievedYear, last = null;
     for (var a = a0 + 1; a <= 100; a++) { bal = bal * (1 + rate/100) - spend + lifeEventDelta(a); if (bal < 0) { last = a - 1; break; } }
     el.textContent = last === null ? "100歳まで持つ見込み" : (last + "歳まで");
-    nt.textContent = "FIRE（" + a0 + "歳）から、毎年 " + yen(spend) + " を使い、残りを年利 " + rate + "% で運用した場合の目安です。税金・インフレは入れていません。";
+    nt.textContent = "FIRE（" + a0 + "歳）から、毎年 " + yen(spend) + " を使い、残りを実質年利 " + (Math.round(rate * 100) / 100) + "%（インフレ差し引き後）で運用した場合の目安です。金額は今のお金の価値で、税金は入れていません。";
   }
   renderEvents();
   var _rlG = renderLedger; renderLedger = function(){ _rlG.apply(this, arguments); };
@@ -4564,6 +4571,7 @@
     if (box.dataset.l !== "1") { document.getElementById("lpRetire").value = l.retire; document.getElementById("lpPAge").value = l.pAge; document.getElementById("lpPension").value = l.pension; document.getElementById("lpAfter").value = l.after || ""; box.dataset.l = "1"; }
     var age = Number(document.getElementById("fireAge").value) || 0, bal = Number(document.getElementById("fireAssets").value) || 0, spend = Number(document.getElementById("fireSpend").value) || 0;
     var rate = Number(document.getElementById("fireRate").value) || 0, save_ = Number(document.getElementById("fireSave").value) || 0;
+    rate = ((1 + rate/100) / (1 + (Number(document.getElementById("fireInfl").value) || 0)/100) - 1) * 100;
     var after = l.after || spend, yr = new Date().getFullYear(), hA = ageOf(birthOf("夫")), wA = ageOf(birthOf("妻")), rows = "", dep = null, atRetire = null;
     for (var y = 0; age + y <= 95; y++) {
       var a = age + y, ev = lifeEventDelta(a), gain = bal * rate / 100, flow, tag = "";
@@ -4586,6 +4594,7 @@
       persistSettings(); renderLifePlan();
     });
   });
+  document.getElementById("fireInfl").addEventListener("input", function(){ updateFireSettings({ fireInfl: Number(this.value) || 0 }); runFire(); });
   renderLifePlan();
   // --- 変更履歴から元に戻す ---
   document.addEventListener("click", function(ev){
