@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793181776">
+<meta name="app-build" content="1793187334">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -367,6 +367,11 @@
   #kpBody.kp-catopen .kp-pad { display: none; }
   #kpBody.kp-catopen .kp-catgrid { margin-bottom: 12px; }
   .kp-catgrid { max-height: none !important; overflow: visible !important; }
+
+  /* 電卓は画面の下に固定（iPhoneでスクロールしてもガタつかない） */
+  .kp-pad { position: fixed !important; left: 50%; transform: translateX(-50%); width: min(100%, 720px); bottom: 0; margin: 0 !important; border-radius: 18px 18px 0 0 !important; box-sizing: border-box; z-index: 30; border-bottom: none !important; }
+  .kp-pad .kp-calc { min-height: 14px; padding-bottom: 0; }
+  .kp-pad .kp-amount { font-size: 28px !important; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -3902,6 +3907,7 @@
       + '<button type="button" class="kp-key clr" data-k="C">C</button><button type="button" class="kp-key ok" id="kpOk">OK　記録する</button></div></div>';
     el.innerHTML = html; proxyAllow = false;
     el.classList.toggle("kp-catopen", !!kp.catOpen);
+    (function(){ var pd = el.querySelector(".kp-pad"); el.style.paddingBottom = (pd && !kp.catOpen) ? (pd.offsetHeight + 16) + "px" : ""; })();
     el.querySelectorAll("[data-kptype]").forEach(function(b){ b.addEventListener("click", function(){ kp.type = b.dataset.kptype; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kpsplit]").forEach(function(b){ b.addEventListener("click", function(){ kp.split = b.dataset.kpsplit; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kppayer]").forEach(function(b){ b.addEventListener("click", function(){ kp.payer = b.dataset.kppayer; renderKeypad(); }); });
