@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793187334">
+<meta name="app-build" content="1793193075">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -372,6 +372,11 @@
   .kp-pad { position: fixed !important; left: 50%; transform: translateX(-50%); width: min(100%, 720px); bottom: 0; margin: 0 !important; border-radius: 18px 18px 0 0 !important; box-sizing: border-box; z-index: 30; border-bottom: none !important; }
   .kp-pad .kp-calc { min-height: 14px; padding-bottom: 0; }
   .kp-pad .kp-amount { font-size: 28px !important; }
+
+  /* 通知は画面の上に、1行で出す（電卓にかぶらない） */
+  .toast { top: calc(10px + env(safe-area-inset-top, 0px)) !important; bottom: auto !important; transform: translate(-50%, -12px) !important; width: max-content; max-width: calc(100% - 24px); border-radius: 16px !important; padding: 9px 12px 9px 16px !important; box-sizing: border-box; z-index: 100; }
+  .toast.show { transform: translate(-50%, 0) !important; }
+  .toast span { flex: 1 1 auto; min-width: 0; } .toast button { flex: 0 0 auto; white-space: nowrap; padding: 5px 10px !important; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -3856,10 +3861,10 @@
     }
     kp.dupOk = null;
     var kpExtra = "";
-    if (kp.type === "expense" && !kpProxy) { try { var prevC = monthStats((kp.date || todayStr()).slice(0, 7)).cats[kp.cat] || 0; kpExtra = "（今月の" + kp.cat + " 計" + yen(prevC + val) + "）"; } catch(e) {} }
+    if (kp.type === "expense" && !kpProxy) { try { var prevC = monthStats((kp.date || todayStr()).slice(0, 7)).cats[kp.cat] || 0; kpExtra = "（今月計 " + yen(prevC + val) + "）"; } catch(e) {} }
     if (kpProxy) kpEnt.proxy = true;
     if (kp.type === "expense" && kp.card && cardById(kp.card)) { kpEnt.cardId = kp.card; kpEnt.accountId = ""; }
-    addLedger(kpEnt, function(id){ if (kpProxy) { showToast(kp0.split + "の分として " + saved.cat + " " + yen(val) + " を記録しました（相手の画面で見られます）"); return; } try { if (navigator.vibrate) navigator.vibrate(12); } catch(e) {} if (!id) { showToast(saved.cat + " " + yen(val) + " を記録しました" + kpExtra); return; } var snap = Object.assign({}, kpEnt, { id: id, _priv: kpPriv }); showUndoToast(saved.cat + " " + yen(val) + " を記録しました" + kpExtra, function(){ deleteLedger(snap); }, function(){ var dt = kpEnt.date || todayStr(); calMonth = dt.slice(0,7); calSel = parseInt(dt.slice(8,10), 10); editingLedgerId = id; showLgSub("calendar"); setTimeout(function(){ var r = document.querySelector("#calBody .row-editing"); if (r && r.scrollIntoView) r.scrollIntoView({ block: "center" }); }, 150); }); });
+    addLedger(kpEnt, function(id){ if (kpProxy) { showToast(kp0.split + "の分として " + saved.cat + " " + yen(val) + " を記録しました（相手の画面で見られます）"); return; } try { if (navigator.vibrate) navigator.vibrate(12); } catch(e) {} if (!id) { showToast("✓ " + saved.cat + " " + yen(val) + kpExtra); return; } var snap = Object.assign({}, kpEnt, { id: id, _priv: kpPriv }); showUndoToast("✓ " + saved.cat + " " + yen(val) + kpExtra, function(){ deleteLedger(snap); }, function(){ var dt = kpEnt.date || todayStr(); calMonth = dt.slice(0,7); calSel = parseInt(dt.slice(8,10), 10); editingLedgerId = id; showLgSub("calendar"); setTimeout(function(){ var r = document.querySelector("#calBody .row-editing"); if (r && r.scrollIntoView) r.scrollIntoView({ block: "center" }); }, 150); }); });
     proxyAllow = false; 
     kp.expr = ""; kp.memo = ""; kp.waste = false; kp.quad = null; rcStatus = "";
     renderKeypad();
