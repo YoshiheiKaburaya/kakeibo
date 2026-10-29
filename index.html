@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793193075">
+<meta name="app-build" content="1793310083">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -547,7 +547,8 @@
         <h3>家計管理 〜4つの敵〜</h3>
         <p class="stat-sub" style="margin-bottom:6px;">夫婦どちらが入力した支出・固定費も合算しています（相手の🔒非公開分は含まれません）。</p>
         <p class="stat-sub" style="margin-bottom:12px;">支出を「固定費／変動費」×「毎月／不定期」の4つに分けて年間で見える化します。カテゴリごとの「不定期」設定は設定タブで変更できます。</p>
-        <label class="field"><span>基本給（額面年収・残業代/ボーナス除く・円）</span><input type="number" id="baseIncomeInput" placeholder="例）5000000" inputmode="numeric"></label>
+        <label class="field"><span id="baseIncomeLabel">あなたの基本給（額面年収・残業代/ボーナス除く・円）</span><input type="number" id="baseIncomeInput" placeholder="例）5000000" inputmode="numeric"></label>
+        <p class="stat-sub" id="baseIncomeTotal" style="margin:-4px 0 10px;"></p>
         <div class="quadrant-grid" id="quadrantGrid"></div>
         <div class="settle-line" id="budgetLine" style="margin-top:4px;">基本給を入力すると、8割ラインとの比較が表示されます</div>
       </div>
@@ -1332,6 +1333,7 @@
         incomeCats: settings.incomeCats,
         catsBy: settings.catsBy || {},
         baseIncome: settings.baseIncome || 0,
+        baseIncomeBy: settings.baseIncomeBy || {},
         fireScope: settings.fireScope || "全体",
         fireSpendBasis: settings.fireSpendBasis || "pace",
         fireAssetKind: settings.fireAssetKind || "invest_cash",
@@ -1361,7 +1363,16 @@
   }
   function updateSplitHusband(val){ settings.splitHusband = val; persistSettings(); }
   function updateCategorySettings(){ persistSettings(); }
-  function updateBaseIncome(val){ settings.baseIncome = val; persistSettings(); }
+  // 基本給は夫・妻それぞれが自分の分を入力し、8割ラインなどには夫婦の合計を使う
+  function baseOf(){ var by = settings.baseIncomeBy; if (!by || typeof by !== "object") by = { "夫": Number(settings.baseIncome || 0), "妻": 0 }; return { "夫": Number(by["夫"] || 0), "妻": Number(by["妻"] || 0) }; }
+  function baseTotal(){ var b = baseOf(); return b["夫"] + b["妻"]; }
+  function updateBaseIncome(val){ var b = baseOf(); b[myRole()] = val; settings.baseIncomeBy = b; settings.baseIncome = b["夫"] + b["妻"]; persistSettings(); }
+  function refreshBaseInput(){
+    var inp = document.getElementById("baseIncomeInput"); if (!inp) return;
+    var me = myRole(), b = baseOf(); inp.value = b[me] || "";
+    var lab = document.getElementById("baseIncomeLabel"); if (lab) lab.textContent = me + "の基本給（額面年収・残業代/ボーナス除く・円）";
+    var t = document.getElementById("baseIncomeTotal"); if (t) t.textContent = "夫婦の合計 " + yen(b["夫"] + b["妻"]) + " で計算します（相手の分は合計にだけ含まれます。転職・退職・働き方が変わったら、自分の分だけ変えてください）。";
+  }
   function updateFireSettings(patch){ Object.assign(settings, patch); persistSettings(); }
   function resetAll(){
     if (synced) {
@@ -1495,10 +1506,9 @@
           if (s && s.expenseCats) settings.expenseCats = clone(s.expenseCats);
           if (s && s.incomeCats) settings.incomeCats = clone(s.incomeCats);
           settings.catsBy = (s && s.catsBy) ? clone(s.catsBy) : {};
-          if (s && typeof s.baseIncome === "number") {
-            settings.baseIncome = s.baseIncome;
-            document.getElementById("baseIncomeInput").value = settings.baseIncome || "";
-          }
+          if (s && typeof s.baseIncome === "number") { settings.baseIncome = s.baseIncome; }
+          if (s && s.baseIncomeBy && typeof s.baseIncomeBy === "object") settings.baseIncomeBy = s.baseIncomeBy;
+          refreshBaseInput();
           if (s && typeof s.fireScope === "string") settings.fireScope = s.fireScope;
           if (s && typeof s.fireSpendBasis === "string") settings.fireSpendBasis = s.fireSpendBasis;
           if (s && typeof s.fireAssetKind === "string") settings.fireAssetKind = s.fireAssetKind;
@@ -1542,7 +1552,7 @@
       refreshPrivateAssetUI();
       document.getElementById("splitHusband").value = settings.splitHusband;
       document.getElementById("splitWifePreview").textContent = "妻の負担割合：" + (100 - settings.splitHusband) + "%";
-      document.getElementById("baseIncomeInput").value = settings.baseIncome || "";
+      refreshBaseInput();
       renderCategorySettings();
       applyFireSyncUI();
       renderAll();
@@ -2696,7 +2706,7 @@
       + '<div class="quad-box q4"><div class="qb-label">④ 変動費・不定期</div><div class="qb-val">'+yen(q4)+'</div><div class="qb-sub">'+year+'年の実績</div></div>';
 
     var total = q1 + q2 + q3 + q4;
-    var base = Number(settings.baseIncome||0);
+    var base = baseTotal(); try { refreshBaseInput(); } catch(e) {}
     var lineEl = document.getElementById("budgetLine");
     if (!base) {
       lineEl.textContent = "基本給を入力すると、8割ラインとの比較が表示されます";
@@ -4114,7 +4124,7 @@
       var partner = myRole() === "夫" ? "妻" : "夫";
       var seen = Number(lsGet("kakeibo_seen_at") || 0);
       if (!seen && data.ledger.length) { lsSet("kakeibo_seen_at", Date.now()); seen = Date.now(); }
-      var fresh = data.ledger.filter(function(e){ return e.by === partner && (e.at||0) > seen && !e.fixedCostId && !e._hidden; });
+      var fresh = data.ledger.filter(function(e){ return e.by === partner && (e.at||0) > seen && !e.fixedCostId && !e._hidden && (!e.split || e.split === "共通"); }); // 夫・妻それぞれの個人の分は通知しない（家族の共通分だけ）
       if (fresh.length) {
         var tot = fresh.reduce(function(s,e){ return s + (e.type === "income" ? 0 : Number(e.amount||0)); }, 0);
         var names = fresh.filter(function(e){ return canSeeSplit(e.split); }).slice(0,3).map(function(e){ return (e.memo||e.category) + " " + yen(e.amount); }).join("、");
