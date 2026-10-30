@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793392944">
+<meta name="app-build" content="1793401874">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -394,7 +394,7 @@
 #loginOverlay button{width:100%;padding:14px;border-radius:14px;border:none;background:#16a898;color:#fff;font-size:16px;font-weight:800;cursor:pointer;}
 #loginOverlay .err{color:#c0392b;font-size:13px;margin-top:14px;white-space:pre-wrap;}
  
-  #budgetCard, #ccCard, #goalCard { display:none !important; }
+  #ccCard, #goalCard { display:none !important; }
   .kp-hidebtn{position:absolute;right:12px;top:-15px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;}
   .kp-showbtn{position:fixed;right:14px;bottom:16px;z-index:60;border:none;background:var(--coral,#FF6B5B);color:#fff;border-radius:999px;padding:12px 18px;font-size:15px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;}
   .kp-types button[data-kptype="invest"].on{background:var(--teal,#12B3A0);}
@@ -840,7 +840,7 @@
           <label class="field"><span>対象</span><select id="fireScope"><option value="全体">夫婦合計</option><option value="夫">夫</option><option value="妻">妻</option><option value="共通">家族</option></select></label>
           <label class="field"><span>資産額に含めるもの</span><select id="fireAssetKind"><option value="invest_cash">現金・預金＋投資</option><option value="invest">投資のみ</option><option value="net">純資産全体</option></select></label>
         </div>
-        <label class="field"><span>年間支出の出し方</span><select id="fireSpendBasis"><option value="pace">今年のペースで年換算</option><option value="avg3y">過去3年の平均（記録がある月だけ）</option></select></label>
+        <label class="field"><span>年間支出の出し方</span><select id="fireSpendBasis"><option value="pace">今年のペースで年換算</option><option value="avg3y">過去3年の平均（記録がある月だけ）</option><option value="all">記録している全期間の平均（記録がある月だけ）</option></select></label>
         <button class="ghost" id="fireSyncBtn" style="width:100%; display:none; margin-bottom:8px;">今すぐ反映する</button>
         <p class="stat-sub" id="fireSyncInfo">資産・家計簿のデータを読み込み中…</p>
       </div>
@@ -3339,7 +3339,7 @@
     data.ledger.forEach(function(e){ if (e.date && e.type === "expense" && (first === null || e.date.slice(0,7) < first)) first = e.date.slice(0,7); });
     if (!first) return [];
     var keys = [], k = shiftMonthKey(cur, -1);
-    for (var i = 0; i < 36 && k >= first; i++) { keys.push(k); k = shiftMonthKey(k, -1); }
+    for (var i = 0; i < (settings.fireSpendBasis === "all" ? 1200 : 36) && k >= first; i++) { keys.push(k); k = shiftMonthKey(k, -1); }
     return keys;
   }
   function annualSpendAvg(scope){
@@ -3351,7 +3351,7 @@
     return pseudo.reduce(function(s,e){ return (scope === "全体" || e.split === "共通") ? s + e.amount : s; }, 0);
   }
   function annualSpendEstimate(scope){
-    if (settings.fireSpendBasis === "avg3y") { var av = annualSpendAvg(scope); if (av !== null && av > 0) return av; }
+    if (settings.fireSpendBasis === "avg3y" || settings.fireSpendBasis === "all") { var av = annualSpendAvg(scope); if (av !== null && av > 0) return av; }
     spendAvgInfo = "";
     var now = new Date();
     var year = String(now.getFullYear());
@@ -3398,7 +3398,7 @@
     setField("fireAssets", r.assets, r.hasAssets);
     notes.push(r.hasAssets ? "現在の資産額：" + r.label + " " + yen(r.assets) + "（対象：" + r.scope + "）" : "資産が未登録のため、現在の資産額は手入力の値を使っています");
     setField("fireSpend", r.spend, r.spend > 0);
-    notes.push(r.spend > 0 ? "年間支出：" + yen(r.spend) + (spendAvgInfo ? "（過去の平均：" + spendAvgInfo + "の月平均×12。記録が3年に満たない場合は、ある分だけで計算）" : "（固定費＋今年の変動費を年換算）") : "支出の記録がないため、年間支出は手入力の値を使っています");
+    notes.push(r.spend > 0 ? "年間支出：" + yen(r.spend) + (spendAvgInfo ? "（過去の平均：" + spendAvgInfo + "の月平均×12。記録が選んだ期間に満たない場合は、ある分だけで計算）" : "（固定費＋今年の変動費を年換算）") : "支出の記録がないため、年間支出は手入力の値を使っています");
     setField("fireSave", r.save, r.save > 0);
     notes.push(r.save > 0 ? "年間積立：" + yen(r.save) + "（投資資産の毎月積立額×12）" : "投資資産に毎月の積立額を入れると年間積立に反映されます");
     document.getElementById("fireSyncInfo").innerHTML = notes.join("<br>");
@@ -3583,10 +3583,11 @@
           + reorder
           + '<input type="text" class="cat-subs-input" data-kind="'+kind+'" data-idx="'+idx+'" value="'+getSubsTarget(c, kind).join(", ")+'" placeholder="小カテゴリ(カンマ区切り)" style="flex:2; margin:0 8px; font-size:12px; padding:7px 9px;">'
           + irregularCb
+          + (kind === "expense" ? '<label class="cat-sp" style="display:flex;align-items:center;gap:3px;margin:0 6px;font-size:11px;white-space:nowrap;"><input type="checkbox" class="cat-special" data-kind="'+kind+'" data-idx="'+idx+'"'+(c.special?' checked':'')+' style="width:auto;margin:0;">特別費</label>' : '')
           + '<button class="del cat-del" data-kind="'+kind+'" data-idx="'+idx+'" title="削除">×</button></div>';
       }).join("");
     }
-    document.getElementById("catSettingsExpense").innerHTML = "<p class='stat-sub' style='margin-bottom:6px;'>支出カテゴリ（右の①〜④は「家計管理 4つの敵」の分類。入力するとき最初に選ばれます：①固定費・毎月 ②変動費・毎月 ③固定費・不定期 ④変動費・不定期）</p>" + block(listForTarget("expense"), "expense");
+    document.getElementById("catSettingsExpense").innerHTML = "<p class='stat-sub' style='margin-bottom:6px;'>支出カテゴリ（旅行・帰省・冠婚葬祭など、たまに大きく出るものは「特別費」に✓。月の予算の計算から外れます。FIREの計算にはそのまま含まれます）</p>" + block(listForTarget("expense"), "expense");
     document.getElementById("catSettingsIncome").innerHTML = "<p class='stat-sub' style='margin-bottom:6px;'>収入カテゴリ</p>" + block(listForTarget("income"), "income");
     fillSubBulk(false);
 
@@ -4359,9 +4360,7 @@
   document.getElementById("rpToday").addEventListener("click", function(){ reportMonth = currentMonthKey(); renderReport(); });
 
   // ===== v29 =====
-  function budSlimHtml(){ return "";
-  }
-  function _budSlimOld(){
+  function budSlimHtml(){
     var mk = currentMonthKey(), scopes = ["家族", myRole()].filter(function(v,i,a){ return a.indexOf(v) === i; }), h = "";
     scopes.forEach(function(sc){
       var b = budgetOf(sc); if (!b || !b.total) return;
@@ -4410,9 +4409,7 @@
   var _rpM = renderReport; renderReport = function(){ _rpM.apply(this, arguments); try { renderMoM(); } catch(e){} };
 
   // 使いすぎアラート
-  function paceInfo(sc){ return null;
-  }
-  function _paceOld(sc){
+  function paceInfo(sc){
     var b = budgetOf(sc); if (!b || !b.total) return null;
     var mk = currentMonthKey(), now = new Date(), day = now.getDate(), dim = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
     var sp = spentFor(sc, mk), proj = day >= 3 ? Math.round(sp / day * dim) : sp;
@@ -4573,9 +4570,7 @@
     var cl = cardsList(); if (!cl.length) return "";
     return '<div class="kp-line"><span class="kp-lab2">カード</span><div class="kp-val"><select id="kpCard"><option value="">使わない</option>' + cl.map(function(c){ return '<option value="' + c.id + '"' + (c.id === kp.card ? ' selected' : '') + '>' + c.name + '</option>'; }).join("") + '</select></div></div>';
   }
-  function catBudHtml(){ return "";
-  }
-  function _catBudOld(){
+  function catBudHtml(){
     if (kp.type !== "expense" || !kp.cat || kp.proxy) return "";
     var mk = currentMonthKey(), h = "";
     ["家族", myRole()].filter(function(v, i, a){ return a.indexOf(v) === i; }).forEach(function(sc){
@@ -4705,6 +4700,11 @@
   }
   var _raSync = renderAssets; renderAssets = function(){ _raSync.apply(this, arguments); setTimeout(syncInvestFixed, 0); };
 
+  document.addEventListener("change", function(ev){
+    var cb = ev.target.closest && ev.target.closest(".cat-special"); if (!cb) return;
+    try { var list = writableList(cb.dataset.kind), idx = Number(cb.dataset.idx); if (cb.checked) list[idx].special = true; else delete list[idx].special;
+      updateCategorySettings(); renderCategorySettings(); renderAll(); showToast(cb.checked ? "特別費にしました（月の予算から外れます）" : "特別費をやめました"); } catch(e) {}
+  });
   // カテゴリの絵（アイコン）を編集
   document.addEventListener("change", function(ev){
     var inp = ev.target.closest && ev.target.closest(".cat-icon-inp"); if (!inp) return;
@@ -4877,11 +4877,17 @@
   document.getElementById("budTotal").addEventListener("change", function(){ var cur = clone(budgetOf(budScope)); cur.total = Number(this.value) || 0; setBudget(budScope, cur); renderHome(); });
 
   // ---- ホーム（今月の状況） ----
+  function specialNames(){
+    var m = {}, add = function(l){ (l||[]).forEach(function(c){ if (c && c.special) m[c.name] = 1; }); };
+    add(settings.expenseCats); var by = settings.catsBy && settings.catsBy.expense; if (by) Object.keys(by).forEach(function(k){ add(by[k]); });
+    return m;
+  }
   function spentFor(sc, mk){
-    return monthEntries(mk).filter(function(e){ return e.type === "expense" && ownerOf(e) === sc; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+    var SP = specialNames();
+    return monthEntries(mk).filter(function(e){ return e.type === "expense" && ownerOf(e) === sc && !SP[e.category]; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
   }
   function catSpentFor(sc, mk){
-    var m = {}; monthEntries(mk).forEach(function(e){ if (e.type === "expense" && ownerOf(e) === sc) m[e.category] = (m[e.category]||0) + Number(e.amount||0); }); return m;
+    var m = {}, SP = specialNames(); monthEntries(mk).forEach(function(e){ if (e.type === "expense" && ownerOf(e) === sc && !SP[e.category]) m[e.category] = (m[e.category]||0) + Number(e.amount||0); }); return m;
   }
   function renderHome(){
     var el = document.getElementById("homeCard"); if (!el) return;
@@ -4892,7 +4898,7 @@
     var h = '<h3>📊 ' + (now.getMonth()+1) + '月の状況</h3>';
     var scopes = ["家族", myRole()].filter(function(v,i,a){ return a.indexOf(v) === i; }), any = false;
     scopes.forEach(function(sc){
-      return; var b = budgetOf(sc); any = true;
+      var b = budgetOf(sc); if (!b.total) return; any = true;
       var sp = spentFor(sc, mk), pct = Math.round(sp / b.total * 100), rest = b.total - sp;
       h += '<div class="hm-row"><div class="hm-top"><span>' + sc + 'の予算</span><span>' + yen(sp) + ' / ' + yen(b.total) + '</span></div>'
         + '<div class="hm-bar"><div class="hm-fill ' + (pct >= 100 ? "over" : (pct >= 80 ? "warn" : "")) + '" style="width:' + Math.min(100, pct) + '%"></div></div>'
@@ -4901,7 +4907,7 @@
       Object.keys(b.cats || {}).forEach(function(c){ var p = (cs[c]||0) / b.cats[c]; if (p >= 0.8) warn.push((p >= 1 ? "🔴 " : "🟠 ") + c + " " + Math.round(p*100) + "%"); });
       if (warn.length) h += '<div class="hm-sub" style="margin-bottom:4px;">' + warn.join("　") + '</div>';
     });
-    if (!any) h += '<div class="hm-row"><div class="hm-top"><span>今月の支出</span><span>' + yen(exp) + '</span></div><div class="hm-sub">収入 ' + yen(inc) + '</div></div>';
+    if (!any) h += '<div class="hm-row"><div class="hm-top"><span>今月の支出</span><span>' + yen(exp) + '</span></div><div class="hm-sub">収入 ' + yen(inc) + ' ・ 「グラフ」の「月の予算」を決めると、残りと使える額が出ます。</div></div>';
     h += '<div class="hm-row hm-sub">今日の支出：<b>' + yen(todaySum) + '</b></div>';
     el.innerHTML = h;
   }
