@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793347933">
+<meta name="app-build" content="1793349764">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -364,7 +364,6 @@
   @supports (-webkit-touch-callout: none) { input:not([type=date]):not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; } }
   button, .kp-key, .kp-pill, .kp-cg, select, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   .kp-pad { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important; overscroll-behavior: contain; }
-  #kpBody.kp-catopen .kp-pad { display: none; }
   #kpBody.kp-catopen .kp-catgrid { margin-bottom: 12px; }
   .kp-catgrid { max-height: none !important; overflow: visible !important; }
 
@@ -3955,7 +3954,7 @@
       + '<button type="button" class="kp-key clr" data-k="C">C</button><button type="button" class="kp-key ok" id="kpOk">OK　記録する</button></div></div>';
     el.innerHTML = html; proxyAllow = false;
     el.classList.toggle("kp-catopen", !!kp.catOpen);
-    (function(){ var pd = el.querySelector(".kp-pad"); el.style.paddingBottom = (pd && !kp.catOpen) ? (pd.offsetHeight + 16) + "px" : ""; })();
+    (function(){ var pd = el.querySelector(".kp-pad"); el.style.paddingBottom = pd ? (pd.offsetHeight + 16) + "px" : ""; })();
     el.querySelectorAll("[data-kptype]").forEach(function(b){ b.addEventListener("click", function(){ kp.type = b.dataset.kptype; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kpsplit]").forEach(function(b){ b.addEventListener("click", function(){ kp.split = b.dataset.kpsplit; kp.cat = ""; kp.sub = ""; renderKeypad(); }); });
     el.querySelectorAll("[data-kppayer]").forEach(function(b){ b.addEventListener("click", function(){ kp.payer = b.dataset.kppayer; renderKeypad(); }); });
