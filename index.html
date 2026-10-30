@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793329952">
+<meta name="app-build" content="1793347933">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -377,6 +377,11 @@
   .toast { top: calc(10px + env(safe-area-inset-top, 0px)) !important; bottom: auto !important; transform: translate(-50%, -12px) !important; width: max-content; max-width: calc(100% - 24px); border-radius: 16px !important; padding: 9px 12px 9px 16px !important; box-sizing: border-box; z-index: 100; }
   .toast.show { transform: translate(-50%, 0) !important; }
   .toast span { flex: 1 1 auto; min-width: 0; } .toast button { flex: 0 0 auto; white-space: nowrap; padding: 5px 10px !important; }
+
+  /* 家計管理（4つの敵）の分類まわりは使わない */
+  .kp-quads4, .cat-quad-sel { display: none !important; }
+  label.field:has(.qa-quad), label.field:has(.ef-quad) { display: none !important; }
+  .cat-icon-inp { width: 44px !important; flex: 0 0 44px; margin: 0 6px 0 0 !important; padding: 6px 2px !important; text-align: center; font-size: 18px !important; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -543,15 +548,6 @@
 
       <div class="card"><h3>固定費一覧</h3><div id="fixedList"><p class="empty">まだ固定費が登録されていません</p></div></div>
 
-      <div class="card accent-sun">
-        <h3>家計管理 〜4つの敵〜</h3>
-        <p class="stat-sub" style="margin-bottom:6px;">夫婦どちらが入力した支出・固定費も合算しています（相手の🔒非公開分は含まれません）。</p>
-        <p class="stat-sub" style="margin-bottom:12px;">支出を「固定費／変動費」×「毎月／不定期」の4つに分けて年間で見える化します。カテゴリごとの「不定期」設定は設定タブで変更できます。</p>
-        <label class="field"><span id="baseIncomeLabel">あなたの基本給（額面年収・残業代/ボーナス除く・円）</span><input type="number" id="baseIncomeInput" placeholder="例）5000000" inputmode="numeric"></label>
-        <p class="stat-sub" id="baseIncomeTotal" style="margin:-4px 0 10px;"></p>
-        <div class="quadrant-grid" id="quadrantGrid"></div>
-        <div class="settle-line" id="budgetLine" style="margin-top:4px;">基本給を入力すると、8割ラインとの比較が表示されます</div>
-      </div>
 
       </div>
     </section>
@@ -1228,12 +1224,17 @@
     updateAsset(assetId, { amount: newAmount });
   }
   function addAsset(entry){
+    if (entry.trackGain && !entry.dc && Number(entry.monthlyContribution || 0) > 0) entry.fxAuto = true; // 積立額を入れた投資は、固定費にも自動で反映する
     var priv = !!entry.private && canPrivate();
     delete entry.private;
     if (synced) { (priv ? privateAssetsCol() : db.collection("assets")).add(entry).catch(dbErr); }
     else { entry.id = uid(); data.assets.push(entry); saveLocal(); renderAll(); }
   }
   function updateAsset(id, patch){
+    try {
+      var a0 = data.assets.find(function(x){ return x.id === id; });
+      if (a0 && a0.trackGain && patch && patch.monthlyContribution !== undefined && !(patch.dc !== undefined ? patch.dc : a0.dc) && Number(patch.monthlyContribution || 0) !== Number(a0.monthlyContribution || 0)) patch.fxAuto = true;
+    } catch(e) {}
     if (synced) {
       var a = data.assets.find(function(x){ return x.id === id; });
       (a && a._priv ? privateAssetsCol() : db.collection("assets")).doc(id).update(patch).catch(dbErr);
@@ -1633,6 +1634,7 @@
     document.getElementById("headerNet").textContent = yen(assetsTotal() - liabilitiesTotal());
     var at = scopedAssets().reduce(function(s,a){ return s + assetValue(a); }, 0);
     var lt = scopedLiabs().reduce(function(s,l){ return s + Number(l.amount||0); }, 0);
+    try { at += hiddenAssetsSum(); lt += hiddenLiabsSum(); } catch(e) {} // 相手の分は合計だけ見える
     document.getElementById("assetsSubTotal").textContent = yen(at);
     document.getElementById("liabSubTotal").textContent = yen(lt);
     document.getElementById("assetsTotal").textContent = yen(at - lt);
@@ -1678,7 +1680,7 @@
     }, 50);
   }
   function linkableAccounts(){
-    return data.assets.filter(function(a){ return !a.depreciate && !a.trackGain && a.mode !== "car" && a.mode !== "estate"; });
+    return data.assets.filter(function(a){ return !a.depreciate && !a.trackGain && a.mode !== "car" && a.mode !== "estate" && canEditSplit(a.owner || ""); });
   }
 
   var chartLedger = null, chartAssets = null, chartInvest = null, chartFire = null, chartYear = null, chartBreakdown = null;
@@ -2700,6 +2702,7 @@
   }
 
   function renderBudgetQuadrants(){
+    if (!document.getElementById("quadrantGrid")) return;
     var year = new Date().getFullYear();
     var monthKeys = [];
     for (var m=1; m<=12; m++){ monthKeys.push(year + "-" + (m<10?"0"+m:m)); }
@@ -2747,7 +2750,7 @@
       }
     }
   }
-  document.getElementById("baseIncomeInput").addEventListener("change", function(){
+  var _biEl = document.getElementById("baseIncomeInput"); if (_biEl) _biEl.addEventListener("change", function(){
     updateBaseIncome(Number(this.value)||0);
     renderBudgetQuadrants();
   });
@@ -3560,6 +3563,7 @@
     refreshFxCategoryOptions();
     renderLedger();
   }
+  function defaultCatIcon(n){ var m = [["食","🍚"],["日用","🧻"],["交通","🚃"],["住","🏠"],["家賃","🏠"],["光熱","💡"],["水道","💡"],["通信","📱"],["娯楽","🎮"],["衣","👕"],["美容","💄"],["医療","🏥"],["教育","📚"],["交際","🍻"],["保険","🛡️"],["税","🧾"],["趣味","🎨"],["自分","🙋"],["子","🧸"],["車","🚗"],["旅","✈️"],["給","💴"],["賞与","💴"],["ボーナス","💴"],["副業","💼"],["臨時","🎁"],["貯","🐖"],["投資","📈"]]; for (var q = 0; q < m.length; q++) if (n.indexOf(m[q][0]) !== -1) return m[q][1]; return "🏷️"; }
   function renderCategorySettings(){
     function block(list, kind){
       return list.map(function(c, idx){
@@ -3570,7 +3574,7 @@
           + '<button class="ghost tiny cat-up" data-kind="'+kind+'" data-idx="'+idx+'" title="上へ" '+(idx===0?"disabled":"")+'>▲</button>'
           + '<button class="ghost tiny cat-down" data-kind="'+kind+'" data-idx="'+idx+'" title="下へ" '+(idx===list.length-1?"disabled":"")+'>▼</button>'
           + '</span>';
-        return '<div class="row"><div class="rname"><span class="rtitle">'+c.name+'</span></div>'
+        return '<div class="row"><input type="text" class="cat-icon-inp" data-kind="'+kind+'" data-idx="'+idx+'" value="'+(c.icon||"")+'" placeholder="'+defaultCatIcon(c.name)+'" title="絵（絵文字）を入れると変えられます。空にすると元に戻ります"><div class="rname"><span class="rtitle">'+c.name+'</span></div>'
           + reorder
           + '<input type="text" class="cat-subs-input" data-kind="'+kind+'" data-idx="'+idx+'" value="'+getSubsTarget(c, kind).join(", ")+'" placeholder="小カテゴリ(カンマ区切り)" style="flex:2; margin:0 8px; font-size:12px; padding:7px 9px;">'
           + irregularCb
@@ -3716,6 +3720,7 @@
   document.getElementById("dupFindBtn").addEventListener("click", renderDupList);
 
   function showUndoToast(msg, undo, edit){
+    document.querySelectorAll(".toast").forEach(function(o){ o.remove(); }); // 通知が重ならないよう、前のものは消す
     var t = document.createElement("div"); t.className = "toast show"; t.style.pointerEvents = "auto"; t.style.display = "flex"; t.style.alignItems = "center"; t.style.gap = "12px";
     var sp = document.createElement("span"); sp.textContent = msg;
     var b = document.createElement("button"); b.textContent = "取り消す"; b.style.cssText = "background:#fff;color:#2B2433;border:none;border-radius:999px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer;";
@@ -3727,6 +3732,7 @@
     t.appendChild(b); document.body.appendChild(t); setTimeout(rm, 8000);
   }
   function showToast(msg){
+    document.querySelectorAll(".toast").forEach(function(o){ o.remove(); });
     var t = document.createElement("div");
     t.className = "toast";
     t.textContent = msg;
@@ -3919,9 +3925,9 @@
     if (kp.sub && subs.indexOf(kp.sub) === -1) kp.sub = "";
     var accounts = linkableAccounts();
     var pill = function(attr, val, label, on, dis){ return '<button type="button" class="kp-pill'+(on?' on':'')+(dis?' dis':'')+'" data-'+attr+'="'+val+'"'+(dis?' disabled':'')+'>'+label+'</button>'; };
-    var catIcon = function(n){ var m = [["食","🍚"],["日用","🧻"],["交通","🚃"],["住","🏠"],["家賃","🏠"],["光熱","💡"],["水道","💡"],["通信","📱"],["娯楽","🎮"],["衣","👕"],["美容","💄"],["医療","🏥"],["教育","📚"],["交際","🍻"],["保険","🛡️"],["税","🧾"],["趣味","🎨"],["自分","🙋"],["子","🧸"],["車","🚗"],["旅","✈️"],["給","💴"],["賞与","💴"],["ボーナス","💴"],["副業","💼"],["臨時","🎁"],["貯","🐖"],["投資","📈"]]; for (var q = 0; q < m.length; q++) if (n.indexOf(m[q][0]) !== -1) return m[q][1]; return "🏷️"; };
+    var catIcon = function(n){ var co = cats.find(function(c){ return c.name === n; }); if (co && co.icon) return co.icon; var m = [["食","🍚"],["日用","🧻"],["交通","🚃"],["住","🏠"],["家賃","🏠"],["光熱","💡"],["水道","💡"],["通信","📱"],["娯楽","🎮"],["衣","👕"],["美容","💄"],["医療","🏥"],["教育","📚"],["交際","🍻"],["保険","🛡️"],["税","🧾"],["趣味","🎨"],["自分","🙋"],["子","🧸"],["車","🚗"],["旅","✈️"],["給","💴"],["賞与","💴"],["ボーナス","💴"],["副業","💼"],["臨時","🎁"],["貯","🐖"],["投資","📈"]]; for (var q = 0; q < m.length; q++) if (n.indexOf(m[q][0]) !== -1) return m[q][1]; return "🏷️"; };
     var line = function(lab, inner){ return '<div class="kp-line"><span class="kp-lab2">' + lab + '</span><div class="kp-val">' + inner + '</div></div>'; };
-    var accSel = '<select id="kpAcc"><option value="">指定しない</option>' + accounts.map(function(a){ return '<option value="'+a.id+'"'+(a.id===kp.account?' selected':'')+'>'+a.name+'</option>'; }).join("") + '</select>';
+    var accSel = '<select id="kpAcc"><option value="">指定しない</option>' + accounts.map(function(a){ return '<option value="'+a.id+'"'+(a.id===kp.account?' selected':'')+'>'+(a._priv ? '🔒 ' : '')+a.name+'</option>'; }).join("") + '</select>';
     var html = '<div class="kp-top"><div class="kp-types"><button data-kptype="expense" class="'+(kp.type==="expense"?'on':'')+'">支出</button><button data-kptype="income" class="'+(kp.type==="income"?'on':'')+'">収入</button></div>'
       + '</div>'
       + budSlimHtml() + catBudHtml()
@@ -3937,6 +3943,7 @@
       + (kp.type === "expense" ? ('<div class="kp-quads4">' + [1,2,3,4].map(function(q){ return pill("kpquad", q, QUAD_LABELS[q], Number(kp.quad || catQuad(catObj)) === q, false); }).join("") + '</div>') : '')
       + '<button type="button" class="ghost small" id="kpMore" style="margin:4px 0 6px;">'+(kp.more?'▾':'▸')+' さらに詳しく（小カテゴリ・メモなど）</button>'
       + (kp.more ? ('<div class="kp-more">'
+        + (synced && !kp.proxy ? '<button type="button" class="ghost small" id="kpProxy" style="margin:0 0 8px;">👥 ' + (myRole() === '夫' ? '妻' : '夫') + 'の代わりに入力する</button>' : '')
         + '<label class="field"><span>小カテゴリ</span><select id="kpSubSel"><option value="">指定なし</option>'+subs.map(function(x){ return '<option value="'+x+'"'+(x===kp.sub?' selected':'')+'>'+x+'</option>'; }).join("")+'</select></label>'
         + '<label class="field"><span>メモ（任意）</span><input type="text" id="kpMemo" list="kpMemoList" autocomplete="off" value="'+(kp.memo||"").replace(/"/g,"&quot;")+'" placeholder="例）スーパー"><datalist id="kpMemoList">' + memoSuggestHtml() + '</datalist></label>'
         + (kp.type === "expense" ? ('<label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="kpWaste"'+(kp.waste?' checked':'')+'><span style="margin:0;">😅 無駄遣いだったかも</span></label>') : '')
@@ -4308,7 +4315,7 @@
   var _raK = renderAssets; renderAssets = function(){ _raK.apply(this, arguments); try { applyAssetKind(); } catch(e){} };
 
   var setGroup = "個人";
-  var SET_GROUPS = { "個人": ["クレジットカード", "表示テーマ", "プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "共有": ["夫婦での共有", "非公開分"], "データ": ["バージョン", "バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
+  var SET_GROUPS = { "個人": ["クレジットカード", "表示テーマ", "プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "データ": ["バージョン", "バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
   function applySettingsGroup(){
     var pane = document.getElementById("pane-settings"); if (!pane) return;
     var bar = document.getElementById("setSubBar");
@@ -4324,6 +4331,7 @@
       var h = c.querySelector("h3"), t = h ? h.textContent : "", g = null;
       Object.keys(SET_GROUPS).forEach(function(k){ if (SET_GROUPS[k].some(function(w){ return t.indexOf(w) !== -1; })) g = k; });
       c.style.display = (g === null || g === setGroup) ? "" : "none";
+      if (t.indexOf("夫婦での共有について") !== -1 || t.indexOf("非公開分の合計表示") !== -1) c.style.display = "none";
       if (c.id === "hiddenShareCard" && c.dataset.can !== "1") c.style.display = "none";
     });
   }
@@ -4343,11 +4351,9 @@
 
   // ===== v31 =====
   function recentCatsHtml(){
-    var since = new Date(Date.now() - 45*86400000).toISOString().slice(0,10), m = {};
-    data.ledger.forEach(function(e){ if (e.type === kp.type && e.date >= since && e.category && !e.fixedCostId && !e._hidden && canEditSplit(e.split)) m[e.category] = (m[e.category]||0) + 1; });
-    var top = Object.keys(m).sort(function(a,b){ return m[b] - m[a]; }).filter(function(c){ return c !== kp.cat; }).slice(0, 3);
-    var cats = catsFor(kp.type, splitLabel(kp.split)); top = top.filter(function(c){ return cats.some(function(x){ return x.name === c; }); });
-    return (kp.proxy && synced ? '<div class="stat-sub" style="margin:2px 0 4px;color:var(--coral-deep);">' + (myRole() === '夫' ? '妻' : '夫') + 'の分として記録します。内容は' + (myRole() === '夫' ? '妻' : '夫') + 'の画面で見られ、あなたの画面には合計だけ反映されます。何件でも続けて入れられます。終わったら下のボタンをもう一度押して戻してください。</div>' : '') + '<div class="kp-recent">' + (top.length ? '<span class="rc-l">最近</span>' + top.map(function(c){ return '<button type="button" data-kpcat="' + c + '">' + c + '</button>'; }).join("") : '') + (synced ? '<button type="button" id="kpProxy" style="background:' + (kp.proxy ? 'var(--coral)' : 'var(--sun-soft)') + ';color:' + (kp.proxy ? '#fff' : 'var(--ink)') + ';">👥 ' + (myRole() === '夫' ? '妻' : '夫') + 'の代わりに入力' + (kp.proxy ? '（中・押すと終了）' : '') + '</button>' : '') + '<button type="button" id="kpRepeat" style="background:var(--teal-soft);color:#0C7A6E;">↻ 直前と同じ</button></div>';
+    if (!(kp.proxy && synced)) return "";
+    var o = myRole() === "夫" ? "妻" : "夫";
+    return '<div class="stat-sub" style="margin:2px 0 4px;color:var(--coral-deep);">' + o + 'の分として記録します。内容は' + o + 'の画面で見られ、あなたの画面には合計だけ反映されます。 <button type="button" class="ghost small" id="kpProxy" style="margin-left:4px;">終了</button></div>';
   }
   function lastByMemo(memo, type){
     memo = (memo || "").trim(); if (!memo) return null; var best = null;
@@ -4648,6 +4654,40 @@
     var b = ev.target.closest && ev.target.closest("[data-hrestore]"); if (!b) return;
     var h = (data.history || []).find(function(x){ return String(x.at) === b.dataset.hrestore; }); if (!h || !h.ent) return;
     addLedger(Object.assign({}, h.ent), function(){ lsSet("kakeibo_hr_" + h.at, "1"); showToast("削除した記録を元に戻しました"); renderHistory(); });
+  });
+
+  // ===== v36 =====
+  // 資産の「毎月の積立額」を固定費（積立）に自動で反映する
+  var _fxSyncBusy = {};
+  function syncInvestFixed(){
+    try {
+      data.assets.forEach(function(a){
+        if (!a.trackGain || !a.fxAuto || a.dc || a.type !== "投資（株式・投信）" || !canEditSplit(a.owner || "")) return;
+        var mc = Number(a.monthlyContribution || 0), ex = data.fixedCosts.filter(function(f){ return f.type === "invest" && f.targetAssetId === a.id; });
+        var key = a.id + "|" + mc;
+        if (_fxSyncBusy[key]) return;
+        if (mc > 0 && !ex.length) {
+          _fxSyncBusy[key] = 1;
+          addFixedCost({ name: "積立", type: "invest", amount: mc, frequency: "毎月", targetAssetId: a.id, accountId: "", startMonth: currentMonthKey(), owner: a.owner || "共通", auto: true }, { private: !!a._priv });
+        } else if (ex.length) {
+          var f = ex.filter(function(x){ return x.auto; })[0];
+          if (f && mc > 0 && Number(f.amount) !== mc) { _fxSyncBusy[key] = 1; updateFixedCost(f.id, { amount: mc }); }
+          else if (f && !(mc > 0)) { _fxSyncBusy[key] = 1; deleteFixedCost(f.id); }
+        }
+      });
+    } catch(e) { console.error(e); }
+  }
+  var _raSync = renderAssets; renderAssets = function(){ _raSync.apply(this, arguments); setTimeout(syncInvestFixed, 0); };
+
+  // カテゴリの絵（アイコン）を編集
+  document.addEventListener("change", function(ev){
+    var inp = ev.target.closest && ev.target.closest(".cat-icon-inp"); if (!inp) return;
+    try {
+      var list = writableList(inp.dataset.kind), idx = Number(inp.dataset.idx), v = (inp.value || "").trim();
+      v = Array.from(v).slice(0, 2).join("");
+      if (v) list[idx].icon = v; else delete list[idx].icon;
+      updateCategorySettings(); renderCategorySettings(); renderKeypad();
+    } catch(e) {}
   });
   function renderSearch(){
     var inp = document.getElementById("lgSearch"), out = document.getElementById("lgSearchOut"); if (!inp || !out) return;
