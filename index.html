@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793310083">
+<meta name="app-build" content="1793329952">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -2614,6 +2614,7 @@
       + '<label class="field"><span>金額（円）</span><input type="text" inputmode="numeric" class="ff-amount" value="'+(f.amount||0)+'"></label>'
       + dayField
       + '<label class="field"><span>'+(f.type==="invest"?'誰が投資する':'大カテゴリ（誰の分）')+'</span><select class="ff-owner">'+splitOptionsHtml(f.owner||"共通")+'</select></label>'
+      + (f.type !== "invest" ? '<div class="grid-2"><label class="field"><span>中カテゴリ</span><select class="ff-cat"></select></label><label class="field"><span>小カテゴリ</span><select class="ff-sub"></select></label></div>' : '')
       + '<label class="field"><span>口座（任意）</span><select class="ff-account">'+accountOptions+'</select></label>'
       + '<div class="ef-btns"><button class="primary ff-save">保存</button><button class="ghost ff-cancel">キャンセル</button></div>'
       + '</div>';
@@ -2621,10 +2622,29 @@
   function bindFixedCostEditForm(editRow, f){
     editRow.addEventListener("click", function(ev){ ev.stopPropagation(); });
     editRow.querySelector(".ff-cancel").addEventListener("click", function(){ editingFixedId = null; renderFixedCosts(); });
+    var fCat = editRow.querySelector(".ff-cat"), fSub = editRow.querySelector(".ff-sub");
+    if (fCat && fSub) {
+      var ownSel = editRow.querySelector(".ff-owner");
+      var fillSub = function(selSub){
+        var cs = catsFor(f.type, splitLabel(ownSel.value)), co = cs.find(function(c){ return c.name === fCat.value; }), subs = co ? subsFor(co, splitLabel(ownSel.value)) : [];
+        fSub.innerHTML = '<option value="">指定なし</option>' + (selSub && subs.indexOf(selSub) === -1 ? '<option value="' + selSub + '">' + selSub + '</option>' : '') + subs.map(function(x){ return '<option value="' + x + '">' + x + '</option>'; }).join("");
+        fSub.value = selSub || "";
+      };
+      var fillCat = function(selCat, selSub){
+        var cs = catsFor(f.type, splitLabel(ownSel.value));
+        fCat.innerHTML = (selCat && !cs.some(function(c){ return c.name === selCat; }) ? '<option value="' + selCat + '">' + selCat + '</option>' : '') + cs.map(function(c){ return '<option value="' + c.name + '">' + c.name + '</option>'; }).join("");
+        fCat.value = selCat || (cs[0] && cs[0].name) || ""; fillSub(selSub);
+      };
+      fillCat(f.category, f.subcategory || "");
+      fCat.addEventListener("change", function(){ fillSub(""); });
+      ownSel.addEventListener("change", function(){ fillCat("", ""); });
+    }
     editRow.querySelector(".ff-save").addEventListener("click", function(){
       var amt = parseAmount(editRow.querySelector(".ff-amount").value);
       if (!isFinite(amt) || amt <= 0) { showToast("金額を数字で入力してください"); return; }
       var patch = { name: editRow.querySelector(".ff-name").value.trim() || f.name, amount: amt, accountId: editRow.querySelector(".ff-account").value || "", owner: editRow.querySelector(".ff-owner").value };
+      var cEl = editRow.querySelector(".ff-cat"), sEl = editRow.querySelector(".ff-sub");
+      if (cEl && cEl.value) { patch.category = cEl.value; patch.subcategory = sEl ? sEl.value : ""; }
       var dayEl = editRow.querySelector(".ff-day");
       if (dayEl) { var d = Number(dayEl.value); patch.day = (d>=1 && d<=31) ? d : 0; }
       editingFixedId = null;
@@ -2696,7 +2716,13 @@
     });
 
     var q1Monthly = data.fixedCosts.filter(function(f){ return f.type==="expense" && (f.frequency||"毎月")==="毎月"; }).reduce(function(s,f){ return s+Number(f.amount||0); },0);
-    q1 += q1Monthly * 12;
+    // 途中から登録した固定費は、登録した月〜12月の分だけ数える（それより前は個別入力の実績が入っているので二重にしない）
+    data.fixedCosts.filter(function(f){ return f.type==="expense" && (f.frequency||"毎月")==="毎月"; }).forEach(function(f){
+      var sm = f.startMonth || "", months = 12;
+      if (sm && sm.slice(0,4) === String(year)) months = 13 - parseInt(sm.slice(5,7), 10);
+      else if (sm && sm.slice(0,4) > String(year)) months = 0;
+      q1 += Number(f.amount||0) * months;
+    });
     q3 += data.fixedCosts.filter(function(f){ return f.type==="expense" && f.frequency==="不定期"; }).reduce(function(s,f){ return s+Number(f.amount||0); },0);
 
     document.getElementById("quadrantGrid").innerHTML =
