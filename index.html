@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793413260">
+<meta name="app-build" content="1793429604">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -991,11 +991,18 @@
         <p class="disclaimer">同期が有効でない場合、読み込むとこの端末のデータが上書きされます。事前に書き出しでバックアップすることをおすすめします。</p>
       </div>
       <div class="card">
+        <h3>カテゴリだけ復元（バックアップから）</h3>
+        <p class="stat-sub" style="margin-bottom:8px;">カテゴリ（大・中・小）の一覧だけを、書き出したバックアップ（JSON）から元に戻します。家計簿・資産などのデータには触りません。</p>
+        <label class="field"><span>バックアップのJSONファイルを選ぶ</span><input type="file" id="catRestoreFile" accept="application/json"></label>
+      </div>
+      <div class="card">
         <h3>データを全て消去</h3>
         <button class="ghost" id="resetBtn" style="width:100%;">すべてのデータを消去する</button>
         <div class="confirm-inline" id="resetConfirm" style="display:none;">
-          本当にすべてのデータを消去しますか？この操作は元に戻せません。
-          <div class="ci-btns"><button class="primary" id="resetConfirmYes" style="margin-top:0;">消去する</button><button class="ghost" id="resetConfirmNo">やめる</button></div>
+          ⚠️ 家計簿・資産・設定など、すべてのデータが消えます（夫婦で同期している場合は、相手の画面のデータも消える可能性があります）。この操作は元に戻せません。
+          <button class="ghost small" id="resetBackupFirst" style="margin:8px 0;width:100%;">先にバックアップを保存する（おすすめ）</button>
+          <label class="field" style="margin:4px 0;"><span>消すなら、下の欄に「消去」と入力してください</span><input type="text" id="resetType" autocomplete="off" placeholder="消去"></label>
+          <div class="ci-btns"><button class="primary" id="resetConfirmYes" style="margin-top:0;" disabled>消去する</button><button class="ghost" id="resetConfirmNo">やめる</button></div>
         </div>
       </div>
     </section>
@@ -1349,13 +1356,21 @@
       saveLocal(); renderAll();
     }
   }
+  var settingsSynced = false;
+  // カテゴリは、自分で編集したときだけ書き込む（それ以外の設定変更で、初期値や古い値で上書きしないため）
+  var catsDirty = false, cloudCats = null;
+  function catsPick(k){
+    if (catsDirty || !cloudCats || cloudCats[k] === undefined) return k === "catsBy" ? (settings.catsBy || {}) : settings[k];
+    return cloudCats[k];
+  }
   function persistSettings(){
     if (synced) {
+      if (!settingsSynced) return; // 共有の設定を読み込む前に、初期値で上書きしない
       db.doc("settings/main").set({
         splitHusband: settings.splitHusband,
-        expenseCats: settings.expenseCats,
-        incomeCats: settings.incomeCats,
-        catsBy: settings.catsBy || {},
+        expenseCats: catsPick("expenseCats"),
+        incomeCats: catsPick("incomeCats"),
+        catsBy: catsPick("catsBy"),
         baseIncome: settings.baseIncome || 0,
         baseIncomeBy: settings.baseIncomeBy || {},
         fireScope: settings.fireScope || "全体",
@@ -1388,7 +1403,7 @@
     } else { saveSettingsLocal(); }
   }
   function updateSplitHusband(val){ settings.splitHusband = val; persistSettings(); }
-  function updateCategorySettings(){ persistSettings(); }
+  function updateCategorySettings(){ catsDirty = true; persistSettings(); if (synced && settingsSynced) { cloudCats = { expenseCats: clone(settings.expenseCats), incomeCats: clone(settings.incomeCats), catsBy: clone(settings.catsBy || {}) }; catsDirty = false; } }
   // 基本給は夫・妻それぞれが自分の分を入力し、8割ラインなどには夫婦の合計を使う
   function baseOf(){ var by = settings.baseIncomeBy; if (!by || typeof by !== "object") by = { "夫": Number(settings.baseIncome || 0), "妻": 0 }; return { "夫": Number(by["夫"] || 0), "妻": Number(by["妻"] || 0) }; }
   function baseTotal(){ var b = baseOf(); return b["夫"] + b["妻"]; }
@@ -1522,6 +1537,7 @@
         }, function(){});
       }
       db.doc("settings/main").onSnapshot(function(snap){
+        settingsSynced = true;
         if (snap.exists) {
           var s = snap.data();
           if (s && typeof s.splitHusband === "number") {
@@ -1529,6 +1545,7 @@
             document.getElementById("splitHusband").value = settings.splitHusband;
             document.getElementById("splitWifePreview").textContent = "妻の負担割合：" + (100 - settings.splitHusband) + "%";
           }
+          cloudCats = { expenseCats: s ? s.expenseCats : undefined, incomeCats: s ? s.incomeCats : undefined, catsBy: s ? s.catsBy : undefined };
           if (s && s.expenseCats) settings.expenseCats = clone(s.expenseCats);
           if (s && s.incomeCats) settings.incomeCats = clone(s.incomeCats);
           settings.catsBy = (s && s.catsBy) ? clone(s.catsBy) : {};
@@ -1570,7 +1587,7 @@
         renderCategorySettings();
         renderBudgetQuadrants();
         runFireWithSync();
-      }, function(){});
+      }, function(){ /* 読み込めなかったときは、設定を書き込まない（初期値で上書きしないため） */ });
     } else {
       synced = false;
       loadLocal();
@@ -3209,7 +3226,7 @@
       var st = new Date(d.getFullYear() + 22, d.getMonth(), d.getDate()), now = new Date();
       out.months = Math.max(0, (now.getFullYear() - st.getFullYear()) * 12 + now.getMonth() - st.getMonth());
     }
-    out.income = annualIncomeOf(who);
+    out.income = penGrossOf(annualIncomeOf(who));
     var ca = ageOf(birthOf("子"));
     if (ca !== null) out.children = ca < 18 ? -1 : 0; // -1＝18歳未満の子あり（人数は手入力の値を使う）
     return out;
@@ -3234,7 +3251,7 @@
     if (!auto) { [M, A].forEach(function(x){ x.readOnly = false; }); info.textContent = "自動入力はオフです。手入力してください。"; return; }
     var v = wpAutoVals(who), n = [], surv = who === "夫" ? "妻" : "夫";
     if (v.months !== null) { M.value = v.months; M.readOnly = true; n.push(who + "の厚生年金：22歳から今まで " + v.months + "ヶ月（300ヶ月未満は300ヶ月で計算されます）"); } else { M.readOnly = false; n.push("プロフィールに" + who + "の生年月日を入れると、加入月数が自動で入ります"); }
-    if (v.income > 0) { A.value = v.income; A.readOnly = true; n.push("平均年収：" + who + "の直近の収入から年換算で " + yen(v.income)); } else { A.readOnly = false; n.push("収入の記録（誰の分＝" + who + "）がないため、平均年収は手入力の値です"); }
+    if (v.income > 0) { A.value = v.income; A.readOnly = true; n.push("平均年収：" + who + "の直近の給料・ボーナスから年換算で " + yen(v.income) + (settings.penNet !== false ? "（手取りから額面に換算）" : "")); } else { A.readOnly = false; n.push("給料・ボーナスの記録（誰の分＝" + who + "）がないため、平均年収は手入力の値です"); }
     if (v.children === 0) { C.value = 0; n.push("18歳未満の子：末子の生年月日から、いません"); }
     else if (v.children === -1) { if (!(Number(C.value) >= 1)) C.value = 1; n.push("18歳未満の子：末子が18歳未満のため、1人以上（人数は変えられます）"); }
     else n.push("18歳未満の子の人数は手入力です（プロフィールに末子の生年月日を入れると自動で判定します）");
@@ -3777,14 +3794,18 @@
     setTimeout(function(){ t.classList.remove("show"); setTimeout(function(){ t.remove(); }, 300); }, 2600);
   }
 
+  function resetGuardClear(){ var t = document.getElementById("resetType"); if (t) t.value = ""; document.getElementById("resetConfirmYes").disabled = true; }
   document.getElementById("resetBtn").addEventListener("click", function(){
-    document.getElementById("resetConfirm").style.display = "block";
+    resetGuardClear(); document.getElementById("resetConfirm").style.display = "block";
   });
+  document.getElementById("resetType").addEventListener("input", function(){ document.getElementById("resetConfirmYes").disabled = (this.value.trim() !== "消去"); });
+  document.getElementById("resetBackupFirst").addEventListener("click", function(){ document.getElementById("exportBtn").click(); });
   document.getElementById("resetConfirmNo").addEventListener("click", function(){
-    document.getElementById("resetConfirm").style.display = "none";
+    resetGuardClear(); document.getElementById("resetConfirm").style.display = "none";
   });
   document.getElementById("resetConfirmYes").addEventListener("click", function(){
-    document.getElementById("resetConfirm").style.display = "none";
+    if ((document.getElementById("resetType").value || "").trim() !== "消去") return;
+    resetGuardClear(); document.getElementById("resetConfirm").style.display = "none";
     resetAll();
     showToast("すべてのデータを消去しました");
   });
@@ -4366,7 +4387,7 @@
   var _raK = renderAssets; renderAssets = function(){ _raK.apply(this, arguments); try { applyAssetKind(); } catch(e){} };
 
   var setGroup = "個人";
-  var SET_GROUPS = { "個人": ["表示テーマ", "プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "データ": ["バージョン", "バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
+  var SET_GROUPS = { "個人": ["表示テーマ", "プロフィール", "この端末を使う人", "割り勘の分担割合"], "カテゴリ": ["小カテゴリ", "カテゴリ管理"], "データ": ["カテゴリだけ復元", "バージョン", "バックアップ", "変更履歴", "ホーム画面", "データの書き出し", "データを全て消去"] };
   function applySettingsGroup(){
     var pane = document.getElementById("pane-settings"); if (!pane) return;
     var bar = document.getElementById("setSubBar");
@@ -4764,6 +4785,31 @@
     return Math.round((lo + hi) / 2 / 10000) * 10000;
   }
   function penGrossOf(net){ return (settings.penNet !== false) ? grossFromNet(net) : net; }
+
+  // ===== v48: カテゴリだけ復元 =====
+  (function(){
+    var f = document.getElementById("catRestoreFile"); if (!f) return;
+    f.addEventListener("change", function(ev){
+      var file = ev.target.files[0]; if (!file) return;
+      var rd = new FileReader();
+      rd.onload = function(){
+        try {
+          var j = JSON.parse(rd.result), s = j && j.settings;
+          if (!s || (!Array.isArray(s.expenseCats) && !s.catsBy)) throw new Error("no cats");
+          var cnt = function(by){ var n = 0; Object.keys(by || {}).forEach(function(t){ Object.keys(by[t] || {}).forEach(function(o){ n += (by[t][o] || []).length; }); }); return n; };
+          var msg = "バックアップのカテゴリに戻します。\n共通の支出 " + (s.expenseCats || []).length + "件・収入 " + (s.incomeCats || []).length + "件、家族／夫／妻ごとの一覧 合計 " + cnt(s.catsBy) + "件。\n今のカテゴリの一覧は上書きされます。よろしいですか？（家計簿の記録は変わりません）";
+          if (!window.confirm(msg)) return;
+          if (Array.isArray(s.expenseCats)) settings.expenseCats = clone(s.expenseCats);
+          if (Array.isArray(s.incomeCats)) settings.incomeCats = clone(s.incomeCats);
+          settings.catsBy = s.catsBy ? clone(s.catsBy) : {};
+          updateCategorySettings(); saveSettingsLocal();
+          try { renderCategorySettings(); } catch(e) {} try { renderKeypad(); } catch(e) {} try { renderAll(); } catch(e) {}
+          showToast("カテゴリを元に戻しました");
+        } catch(e) { showToast("読み込めませんでした。書き出したJSONファイルか確認してください"); }
+      };
+      rd.readAsText(file); ev.target.value = "";
+    });
+  })();
   // ===== v44: 「年金」の計算結果をFIREに自動連携 =====
   function pensionAnnualFor(who){
     var g = function(id){ return Number((document.getElementById(id) || {}).value) || 0; };
@@ -5138,7 +5184,7 @@
 
   // ---- 年金・遺族年金の自動連携 ----
   function annualIncomeOf(who){
-    var rows = data.ledger.filter(function(e){ return e.type === "income" && e.split === who && e.date && !e._hidden; });
+    var rows = data.ledger.filter(function(e){ return e.type === "income" && e.split === who && e.date && !e._hidden && /給|賞与|ボーナス/.test(e.category || ""); }); // 給料・ボーナスだけ（ご祝儀・臨時収入・副業などは除く）
     var since = new Date(Date.now() - 365*86400000).toISOString().slice(0,10);
     rows = rows.filter(function(e){ return e.date >= since; });
     if (!rows.length) return 0;
@@ -5162,8 +5208,8 @@
     ["penKisoMonths","penKouseiMonths"].forEach(function(i){ document.getElementById(i).readOnly = (a !== null && a >= 0); });
     var net0 = annualIncomeOf(who), inc = penGrossOf(net0), isNet = settings.penNet !== false;
     var pn = document.getElementById("penNet"); if (pn) pn.checked = isNet;
-    if (inc > 0) { document.getElementById("penAvgIncome").value = inc; document.getElementById("penAvgIncome").readOnly = true; n.push("平均年収：直近の" + who + "の収入から年換算で " + yen(net0) + (isNet ? "（手取り）→ 額面に換算して " + yen(inc) : "")); }
-    else { document.getElementById("penAvgIncome").readOnly = false; n.push("収入の記録（誰の分＝" + who + "）がないため、平均年収は手入力の値です"); }
+    if (inc > 0) { document.getElementById("penAvgIncome").value = inc; document.getElementById("penAvgIncome").readOnly = true; n.push("平均年収：直近の" + who + "の給料・ボーナスから年換算で " + yen(net0) + (isNet ? "（手取り）→ 額面に換算して " + yen(inc) : "")); }
+    else { document.getElementById("penAvgIncome").readOnly = false; n.push("給料・ボーナスの記録（誰の分＝" + who + "）がないため、平均年収は手入力の値です"); }
     info.innerHTML = n.join("<br>");
   }
   document.getElementById("penNet").addEventListener("change", function(){ updateFireSettings({ penNet: this.checked }); runPension(); try { runWidowPension(); } catch(e) {} });
