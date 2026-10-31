@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793401874">
+<meta name="app-build" content="1793411601">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -855,6 +855,22 @@
         <label class="field"><span>想定インフレ率（年率 %）</span><input type="number" id="fireInfl" value="2" step="0.1"></label>
         <p class="stat-sub" style="margin:-4px 0 8px;">利回りからインフレ分を引いた「実質の利回り」で計算します。金額はすべて今のお金の価値で表示されます（0にするとインフレなし）。</p>
         <label class="field"><span>年間の追加貯蓄・投資額（円）</span><input type="number" id="fireSave" value="1200000" inputmode="numeric"></label>
+        <label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="fireAdjOn"><span style="margin:0;">年金・保険を加味する</span></label>
+        <div id="fireAdjBox" style="display:none;">
+          <p class="stat-sub" style="margin:0 0 6px;">年金は夫・妻それぞれ、「65歳で受け取る場合の月額（今のお金の価値）」と「受け取り始める年齢（60〜75歳）」を入れてください。受け取り年齢を変えると、繰上げ（1か月早めるごとに0.4%減）・繰下げ（1か月遅らせるごとに0.7%増）で自動で増減します（1962年4月2日以降生まれの場合）。公的年金＋個人年金・保険の年金の合計を入れてください。</p>
+          <div class="grid-2">
+            <label class="field"><span>夫：受け取り開始の年齢</span><input type="number" id="fireAdjPAgeH" value="65" min="60" max="75"></label>
+            <label class="field"><span>夫：65歳で受け取る月額（円）</span><input type="number" id="fireAdjPenH" value="120000" inputmode="numeric"></label>
+          </div>
+          <p class="stat-sub" id="fireAdjNoteH" style="margin:-4px 0 8px;"></p>
+          <div class="grid-2">
+            <label class="field"><span>妻：受け取り開始の年齢</span><input type="number" id="fireAdjPAgeW" value="65" min="60" max="75"></label>
+            <label class="field"><span>妻：65歳で受け取る月額（円）</span><input type="number" id="fireAdjPenW" value="100000" inputmode="numeric"></label>
+          </div>
+          <p class="stat-sub" id="fireAdjNoteW" style="margin:-4px 0 8px;"></p>
+          <label class="field"><span>FIRE後は払わなくなる保険料（年額・円）</span><input type="number" id="fireAdjCut" value="0" inputmode="numeric"></label>
+          <p class="stat-sub" style="margin:-4px 0 8px;">保険料は、家計簿・固定費に入っている分がすでに年間支出に含まれています。FIRE後にやめる・終わる保険料があれば、その年額を入れると支出から引きます。年齢は、設定の生年月日から夫婦それぞれ自動で数えます（未入力なら同い年として計算）。対象を「夫」「妻」にしているときは、その人の年金だけを使います。</p>
+        </div>
         <button class="primary" id="fireRun">試算する</button>
       </div>
       <div class="card">
@@ -874,8 +890,8 @@
       </div>
       <div class="card" id="lpCard"><h3>📅 ライフプラン表</h3>
         <p class="stat-sub" style="margin-bottom:8px;">上のFIRE試算の入力（年齢・資産・運用利回り・年間の追加貯蓄）とライフイベントをもとに、年ごとの資産の動きを一覧にします。</p>
-        <div class="grid-2"><label class="field"><span>退職する年齢</span><input type="number" id="lpRetire" inputmode="numeric"></label><label class="field"><span>年金を受け取り始める年齢</span><input type="number" id="lpPAge" inputmode="numeric"></label></div>
-        <div class="grid-2"><label class="field"><span>老後の年金（月額・夫婦合計）</span><input type="number" id="lpPension" inputmode="numeric"></label><label class="field"><span>老後の年間支出（空欄＝今と同じ）</span><input type="number" id="lpAfter" inputmode="numeric"></label></div>
+        <div class="grid-2"><label class="field"><span>退職する年齢</span><input type="number" id="lpRetire" inputmode="numeric"></label><label class="field" style="display:none;"><span>年金を受け取り始める年齢</span><input type="number" id="lpPAge" inputmode="numeric"></label></div>
+        <div class="grid-2"><label class="field" style="display:none;"><span>老後の年金（月額・夫婦合計）</span><input type="number" id="lpPension" inputmode="numeric"></label><label class="field"><span>老後の年間支出（空欄＝今と同じ）</span><input type="number" id="lpAfter" inputmode="numeric"></label></div>
         <div id="lpSummary"></div>
         <div id="lpTable" style="overflow-x:auto; max-height:420px; overflow-y:auto; margin-top:8px;"></div>
         <p class="stat-sub" style="margin-top:6px;">インフレは実質利回りで反映しています（金額は今のお金の価値）。税金・年金額の変化は入れていない簡易版です。</p>
@@ -1359,6 +1375,7 @@
         cards: settings.cards || [],
         cardPaid: settings.cardPaid || {},
         lp: settings.lp || {},
+        fireAdj: settings.fireAdj || {},
         fireInfl: settings.fireInfl === undefined ? 2 : settings.fireInfl,
         wpAuto: settings.wpAuto !== false,
         penEx: settings.penEx || {},
@@ -1534,6 +1551,7 @@
           if (s && Array.isArray(s.cards)) settings.cards = s.cards;
           if (s && s.cardPaid && typeof s.cardPaid === "object") settings.cardPaid = s.cardPaid;
           if (s && s.lp && typeof s.lp === "object") settings.lp = s.lp;
+          if (s && s.fireAdj && typeof s.fireAdj === "object") settings.fireAdj = s.fireAdj;
           if (s && typeof s.fireInfl === "number") settings.fireInfl = s.fireInfl;
           if (s && typeof s.wpAuto === "boolean") settings.wpAuto = s.wpAuto;
           if (s && s.penEx && typeof s.penEx === "object") settings.penEx = s.penEx;
@@ -3439,15 +3457,23 @@
     if (inflEl.dataset.l !== "1") { inflEl.value = settings.fireInfl === undefined ? 2 : settings.fireInfl; inflEl.dataset.l = "1"; }
     var infl = Number(inflEl.value) || 0; rate = ((1 + rate/100) / (1 + infl/100) - 1) * 100;
     var save_ = Number(document.getElementById("fireSave").value) || 0;
-    var target = withdraw > 0 ? spend / (withdraw/100) : 0;
-    document.getElementById("fireTarget").textContent = yen(target);
+    var adj = fireAdj(), spendF = adj.on ? Math.max(0, spend - adj.cut) : spend;
+    var targetAt = function(F){
+      if (!(withdraw > 0)) return 0;
+      if (!adj.on || !adj.has) return spendF / (withdraw/100);
+      var last = Math.max(F, adj.lastStart), sum = 0;
+      for (var q = F; q < last; q++) sum += Math.max(0, spendF - adj.penAt(q));
+      return sum + Math.max(0, spendF - adj.penAt(last)) / (withdraw/100);
+    };
+    var target = targetAt(age);
     var balance = assets, series = [balance], labels = [String(age)], achievedYear = null;
     for (var y=1; y<=60; y++){
       balance = balance * (1 + rate/100) + save_ + lifeEventDelta(age + y);
       series.push(balance); labels.push(String(age + y));
-      if (achievedYear === null && balance >= target) achievedYear = y;
+      if (achievedYear === null && balance >= targetAt(age + y)) achievedYear = y;
       if (achievedYear !== null && y >= achievedYear + 3) break;
     }
+    target = targetAt(achievedYear === null ? age : age + achievedYear); document.getElementById("fireTarget").textContent = yen(target);
     var resultEl = document.getElementById("fireResult");
     resultEl.textContent = achievedYear === null ? "60年以内に到達しません" : (achievedYear + "年後（" + (age+achievedYear) + "歳）に到達見込み");
     try { renderFireDraw(age, achievedYear, series, spend, rate); } catch(e) { console.error(e); }
@@ -3456,7 +3482,7 @@
       if (chartFire) chartFire.destroy();
       chartFire = new Chart(ctx, { type: "line", data: { labels: labels.map(function(a){ return a+"歳"; }), datasets: [
         { label: "資産推移", data: series, borderColor: "#12B3A0", backgroundColor: "rgba(18,179,160,0.15)", fill: true, tension: 0.25 },
-        { label: "FIREライン", data: series.map(function(){ return target; }), borderColor: "#FFC53D", borderDash: [5,4], pointRadius: 0 }
+        { label: "FIREライン", data: series.map(function(_, i){ return targetAt(age + i); }), borderColor: "#FFC53D", borderDash: [5,4], pointRadius: 0 }
       ]}, options: chartBaseOptions() });
     } catch(chartErr) { console.error("chartFire failed:", chartErr); }
   }
@@ -4484,9 +4510,10 @@
     var el = document.getElementById("fireDraw"), nt = document.getElementById("fireDrawNote"); if (!el) return;
     if (achievedYear === null) { el.textContent = "—"; nt.textContent = "FIRE達成の見込みがないため、取り崩しの試算はありません。"; return; }
     var bal = series[achievedYear], a0 = age + achievedYear, last = null;
-    for (var a = a0 + 1; a <= 100; a++) { bal = bal * (1 + rate/100) - spend + lifeEventDelta(a); if (bal < 0) { last = a - 1; break; } }
+    var adj = fireAdj(), sp0 = adj.on ? Math.max(0, spend - adj.cut) : spend;
+    for (var a = a0 + 1; a <= 100; a++) { bal = bal * (1 + rate/100) - Math.max(0, sp0 - (adj.on ? adj.penAt(a) : 0)) + lifeEventDelta(a); if (bal < 0) { last = a - 1; break; } }
     el.textContent = last === null ? "100歳まで持つ見込み" : (last + "歳まで");
-    nt.textContent = "FIRE（" + a0 + "歳）から、毎年 " + yen(spend) + " を使い、残りを実質年利 " + (Math.round(rate * 100) / 100) + "%（インフレ差し引き後）で運用した場合の目安です。金額は今のお金の価値で、税金は入れていません。";
+    nt.textContent = "FIRE（" + a0 + "歳）から、毎年 " + yen(sp0) + " を使い" + (adj.on && adj.has ? "（年金は夫・妻それぞれの受け取り開始年齢から加算）" : "") + "、残りを実質年利 " + (Math.round(rate * 100) / 100) + "%（インフレ差し引き後）で運用した場合の目安です。金額は今のお金の価値で、税金は入れていません。";
   }
   renderEvents();
   var _rlG = renderLedger; renderLedger = function(){ _rlG.apply(this, arguments); };
@@ -4649,9 +4676,9 @@
     var after = l.after || spend, yr = new Date().getFullYear(), hA = ageOf(birthOf("夫")), wA = ageOf(birthOf("妻")), rows = "", dep = null, atRetire = null;
     for (var y = 0; age + y <= 95; y++) {
       var a = age + y, ev = lifeEventDelta(a), gain = bal * rate / 100, flow, tag = "";
-      if (a < l.retire) flow = save_; else flow = -after + (a >= l.pAge ? l.pension * 12 : 0);
+      if (a < l.retire) flow = save_; else flow = -after + (fireAdj().on ? fireAdj().penAt(a) : (a >= l.pAge ? l.pension * 12 : 0));
       if (a === l.retire) { tag = "退職"; atRetire = bal + gain + flow + ev; }
-      if (a === l.pAge) tag += (tag ? "・" : "") + "年金開始";
+      if (a === fireAdj().firstStart) tag += (tag ? "・" : "") + "年金開始";
       bal = bal + gain + flow + ev;
       if (bal < 0 && dep === null) dep = a;
       var at = (hA !== null || wA !== null) ? ((hA !== null ? "夫" + (hA + y) : "") + (hA !== null && wA !== null ? " / " : "") + (wA !== null ? "妻" + (wA + y) : "")) : (a + "歳");
@@ -4670,6 +4697,52 @@
   });
   document.getElementById("fireInfl").addEventListener("input", function(){ updateFireSettings({ fireInfl: Number(this.value) || 0 }); runFire(); });
   renderLifePlan();
+
+  // ===== v41/v43: FIREに年金・保険を加味（夫・妻それぞれ） =====
+  function pensionFactor(age){ age = Math.max(60, Math.min(75, Number(age) || 65)); return age < 65 ? 1 - 0.004 * (65 - age) * 12 : 1 + 0.007 * (age - 65) * 12; }
+  function fireAdjPeople(){
+    var a = settings.fireAdj || {}, pp = a.people || {}, scope = settings.fireScope || "全体", prim = null;
+    try { prim = ageFor(scope); } catch(e) {}
+    var out = [];
+    ["夫", "妻"].forEach(function(w){
+      if ((scope === "夫" || scope === "妻") && scope !== w) return;
+      var d = pp[w] || {}, pen = d.pen === undefined ? (w === "夫" ? 120000 : 100000) : (Number(d.pen) || 0), pAge = Math.max(60, Math.min(75, Math.round(Number(d.pAge) || 65)));
+      var ag = null; try { ag = ageOf(birthOf(w)); } catch(e) {}
+      var off = (prim && ag !== null && ag >= 0) ? ag - prim.age : 0;
+      out.push({ who: w, pen: pen, pAge: pAge, off: off, annual: pen * 12 * pensionFactor(pAge) });
+    });
+    return out;
+  }
+  function fireAdj(){
+    var a = settings.fireAdj || {}, ps = fireAdjPeople();
+    var penAt = function(age){ return ps.reduce(function(s, p){ return s + ((age + p.off >= p.pAge) ? p.annual : 0); }, 0); };
+    var starts = ps.map(function(p){ return p.pAge - p.off; });
+    return { on: !!a.on, people: ps, cut: Number(a.cut) || 0, penAt: penAt, has: ps.some(function(p){ return p.annual > 0; }), lastStart: starts.length ? Math.max.apply(null, starts) : 0, firstStart: starts.length ? Math.min.apply(null, starts) : 0 };
+  }
+  function loadFireAdjUI(){
+    var a = settings.fireAdj || {}, on = document.getElementById("fireAdjOn"); if (!on) return;
+    var set = function(id, v){ var el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v; };
+    on.checked = !!a.on; document.getElementById("fireAdjBox").style.display = a.on ? "" : "none";
+    var pp = a.people || {};
+    [["夫", "H", 120000], ["妻", "W", 100000]].forEach(function(x){
+      var d = pp[x[0]] || {}, pen = d.pen === undefined ? x[2] : d.pen, pAge = Math.max(60, Math.min(75, Math.round(Number(d.pAge) || 65)));
+      set("fireAdjPAge" + x[1], pAge); set("fireAdjPen" + x[1], pen);
+      var nt = document.getElementById("fireAdjNote" + x[1]), f = pensionFactor(pAge);
+      if (nt) nt.textContent = x[0] + "が" + pAge + "歳から受け取ると：月額 約" + yen(Math.round((Number(pen) || 0) * f)) + "（65歳受給より " + (f >= 1 ? "+" : "−") + Math.abs(Math.round((f - 1) * 1000) / 10) + "%）";
+    });
+    set("fireAdjCut", a.cut || 0);
+  }
+  (function(){
+    var save = function(){
+      var a = Object.assign({}, settings.fireAdj || {}); a.on = document.getElementById("fireAdjOn").checked; a.cut = Number(document.getElementById("fireAdjCut").value) || 0;
+      a.people = {};
+      [["夫", "H"], ["妻", "W"]].forEach(function(x){ a.people[x[0]] = { pen: Number(document.getElementById("fireAdjPen" + x[1]).value) || 0, pAge: Math.max(60, Math.min(75, Math.round(Number(document.getElementById("fireAdjPAge" + x[1]).value) || 65))) }; });
+      settings.fireAdj = a; persistSettings();
+      loadFireAdjUI(); runFire();
+    };
+    ["fireAdjOn", "fireAdjPAgeH", "fireAdjPenH", "fireAdjPAgeW", "fireAdjPenW", "fireAdjCut"].forEach(function(id){ var el = document.getElementById(id); el.addEventListener(el.type === "checkbox" ? "change" : "input", save); });
+  })();
+  var _rfAdj = runFire; runFire = function(){ try { loadFireAdjUI(); } catch(e) {} _rfAdj.apply(this, arguments); };
   // --- 変更履歴から元に戻す ---
   document.addEventListener("click", function(ev){
     var b = ev.target.closest && ev.target.closest("[data-hrestore]"); if (!b) return;
