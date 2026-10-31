@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793411601">
+<meta name="app-build" content="1793413260">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -806,6 +806,7 @@
       <div class="card accent-teal">
         <label class="field"><span>誰の年金か</span><select id="penWho"><option value="夫">夫</option><option value="妻">妻</option></select></label>
         <label class="field" style="display:flex; flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="penAuto" checked><span style="margin:0;">生年月日と家計簿の収入から自動で計算する</span></label>
+        <label class="field" style="display:flex; flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="penNet" checked><span style="margin:0;">家計簿の収入は手取り（税金・社会保険料を引いた後）なので、額面に換算する</span></label>
         <p class="stat-sub" id="penAutoInfo" style="margin:0;"></p>
       </div>
       <div class="card accent-lav">
@@ -857,6 +858,7 @@
         <label class="field"><span>年間の追加貯蓄・投資額（円）</span><input type="number" id="fireSave" value="1200000" inputmode="numeric"></label>
         <label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="fireAdjOn"><span style="margin:0;">年金・保険を加味する</span></label>
         <div id="fireAdjBox" style="display:none;">
+          <label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="fireAdjPenAuto" checked><span style="margin:0;">「年金」の計算結果を自動で使う（夫・妻それぞれ）</span></label>
           <p class="stat-sub" style="margin:0 0 6px;">年金は夫・妻それぞれ、「65歳で受け取る場合の月額（今のお金の価値）」と「受け取り始める年齢（60〜75歳）」を入れてください。受け取り年齢を変えると、繰上げ（1か月早めるごとに0.4%減）・繰下げ（1か月遅らせるごとに0.7%増）で自動で増減します（1962年4月2日以降生まれの場合）。公的年金＋個人年金・保険の年金の合計を入れてください。</p>
           <div class="grid-2">
             <label class="field"><span>夫：受け取り開始の年齢</span><input type="number" id="fireAdjPAgeH" value="65" min="60" max="75"></label>
@@ -1369,6 +1371,7 @@
         goals: settings.goals || [],
         insLivAuto: settings.insLivAuto !== false,
         penAuto: settings.penAuto !== false,
+        penNet: settings.penNet !== false,
         penWho: settings.penWho || "",
         wpWho: settings.wpWho || "夫",
         lifeEvents: settings.lifeEvents || [],
@@ -1545,6 +1548,7 @@
           settings.goals = (s && Array.isArray(s.goals)) ? clone(s.goals) : [];
           if (s && typeof s.insLivAuto === "boolean") settings.insLivAuto = s.insLivAuto;
           if (s && typeof s.penAuto === "boolean") settings.penAuto = s.penAuto;
+          if (s && typeof s.penNet === "boolean") settings.penNet = s.penNet;
           if (s && typeof s.penWho === "string" && s.penWho) settings.penWho = s.penWho;
           if (s && typeof s.wpWho === "string" && s.wpWho) settings.wpWho = s.wpWho;
           if (s && Array.isArray(s.lifeEvents)) settings.lifeEvents = s.lifeEvents;
@@ -4706,7 +4710,7 @@
     var out = [];
     ["夫", "妻"].forEach(function(w){
       if ((scope === "夫" || scope === "妻") && scope !== w) return;
-      var d = pp[w] || {}, pen = d.pen === undefined ? (w === "夫" ? 120000 : 100000) : (Number(d.pen) || 0), pAge = Math.max(60, Math.min(75, Math.round(Number(d.pAge) || 65)));
+      var d = pp[w] || {}, pen = (a.penAuto !== false) ? Math.round(pensionAnnualFor(w) / 12) : (d.pen === undefined ? (w === "夫" ? 120000 : 100000) : (Number(d.pen) || 0)), pAge = Math.max(60, Math.min(75, Math.round(Number(d.pAge) || 65)));
       var ag = null; try { ag = ageOf(birthOf(w)); } catch(e) {}
       var off = (prim && ag !== null && ag >= 0) ? ag - prim.age : 0;
       out.push({ who: w, pen: pen, pAge: pAge, off: off, annual: pen * 12 * pensionFactor(pAge) });
@@ -4725,23 +4729,63 @@
     on.checked = !!a.on; document.getElementById("fireAdjBox").style.display = a.on ? "" : "none";
     var pp = a.people || {};
     [["夫", "H", 120000], ["妻", "W", 100000]].forEach(function(x){
-      var d = pp[x[0]] || {}, pen = d.pen === undefined ? x[2] : d.pen, pAge = Math.max(60, Math.min(75, Math.round(Number(d.pAge) || 65)));
-      set("fireAdjPAge" + x[1], pAge); set("fireAdjPen" + x[1], pen);
+      var d = pp[x[0]] || {}, pen = (a.penAuto !== false) ? Math.round(pensionAnnualFor(x[0]) / 12) : (d.pen === undefined ? x[2] : d.pen), pAge = Math.max(60, Math.min(75, Math.round(Number(d.pAge) || 65)));
+      set("fireAdjPAge" + x[1], pAge); set("fireAdjPen" + x[1], pen); var pe = document.getElementById("fireAdjPen" + x[1]); if (pe) pe.readOnly = (a.penAuto !== false);
       var nt = document.getElementById("fireAdjNote" + x[1]), f = pensionFactor(pAge);
       if (nt) nt.textContent = x[0] + "が" + pAge + "歳から受け取ると：月額 約" + yen(Math.round((Number(pen) || 0) * f)) + "（65歳受給より " + (f >= 1 ? "+" : "−") + Math.abs(Math.round((f - 1) * 1000) / 10) + "%）";
     });
     set("fireAdjCut", a.cut || 0);
+    var pa = document.getElementById("fireAdjPenAuto"); if (pa) pa.checked = (a.penAuto !== false);
   }
   (function(){
     var save = function(){
-      var a = Object.assign({}, settings.fireAdj || {}); a.on = document.getElementById("fireAdjOn").checked; a.cut = Number(document.getElementById("fireAdjCut").value) || 0;
+      var a = Object.assign({}, settings.fireAdj || {}); a.penAuto = document.getElementById("fireAdjPenAuto").checked; a.on = document.getElementById("fireAdjOn").checked; a.cut = Number(document.getElementById("fireAdjCut").value) || 0;
       a.people = {};
       [["夫", "H"], ["妻", "W"]].forEach(function(x){ a.people[x[0]] = { pen: Number(document.getElementById("fireAdjPen" + x[1]).value) || 0, pAge: Math.max(60, Math.min(75, Math.round(Number(document.getElementById("fireAdjPAge" + x[1]).value) || 65))) }; });
       settings.fireAdj = a; persistSettings();
       loadFireAdjUI(); runFire();
     };
-    ["fireAdjOn", "fireAdjPAgeH", "fireAdjPenH", "fireAdjPAgeW", "fireAdjPenW", "fireAdjCut"].forEach(function(id){ var el = document.getElementById(id); el.addEventListener(el.type === "checkbox" ? "change" : "input", save); });
+    ["fireAdjOn", "fireAdjPenAuto", "fireAdjPAgeH", "fireAdjPenH", "fireAdjPAgeW", "fireAdjPenW", "fireAdjCut"].forEach(function(id){ var el = document.getElementById(id); el.addEventListener(el.type === "checkbox" ? "change" : "input", save); });
   })();
+
+
+  // ===== v45: 手取り→額面（年金の計算用） =====
+  function netFromGross(g){
+    var sd = g <= 1625000 ? 550000 : g <= 1800000 ? g * 0.4 - 100000 : g <= 3600000 ? g * 0.3 + 80000 : g <= 6600000 ? g * 0.2 + 440000 : g <= 8500000 ? g * 0.1 + 1100000 : 1950000;
+    var sih = g * 0.15, tx = Math.max(0, g - sd - sih - 480000), it;
+    it = tx <= 1950000 ? tx * 0.05 : tx <= 3300000 ? tx * 0.1 - 97500 : tx <= 6950000 ? tx * 0.2 - 427500 : tx <= 9000000 ? tx * 0.23 - 636000 : tx <= 18000000 ? tx * 0.33 - 1536000 : tx * 0.4 - 2796000;
+    var rs = Math.max(0, g - sd - sih - 430000) * 0.1 + (g > 1000000 ? 5000 : 0);
+    return g - sih - it * 1.021 - rs;
+  }
+  function grossFromNet(net){
+    if (!(net > 0)) return 0;
+    var lo = net, hi = net * 2.2 + 1000000;
+    for (var i = 0; i < 40; i++) { var mid = (lo + hi) / 2; if (netFromGross(mid) < net) lo = mid; else hi = mid; }
+    return Math.round((lo + hi) / 2 / 10000) * 10000;
+  }
+  function penGrossOf(net){ return (settings.penNet !== false) ? grossFromNet(net) : net; }
+  // ===== v44: 「年金」の計算結果をFIREに自動連携 =====
+  function pensionAnnualFor(who){
+    var g = function(id){ return Number((document.getElementById(id) || {}).value) || 0; };
+    var sel = (document.getElementById("penWho") || {}).value, manual = settings.penAuto === false && sel === who;
+    var ex = (settings.penEx || {})[who] || {}, kiso, kou, inc;
+    if (manual) { kiso = Math.min(480, g("penKisoMonths")); kou = g("penKouseiMonths"); inc = g("penAvgIncome"); }
+    else {
+      var a = ageOf(birthOf(who));
+      kiso = (a !== null && a >= 0) ? 480 : Math.min(480, g("penKisoMonths") || 480);
+      kou = (a !== null && a >= 0) ? 456 : (g("penKouseiMonths") || 360);
+      inc = penGrossOf(annualIncomeOf(who)) || (sel === who ? g("penAvgIncome") : 0) || 5000000;
+    }
+    var exM = Math.max(0, Math.min(kiso, Number(ex.ex) || 0)), bkM = Math.max(0, Math.min(exM, Number(ex.back) || 0)), unpaid = exM - bkM;
+    var exW = (ex.kind === "full") ? 0.5 : 0;
+    var kisoY = 816000 * ((kiso - unpaid + unpaid * exW) / 480), kouY = (inc / 12) * (5.481 / 1000) * kou;
+    return kisoY + kouY;
+  }
+  var _penSig = "";
+  var _rpFire = runPension; runPension = function(){
+    _rpFire.apply(this, arguments);
+    try { var sig = Math.round(pensionAnnualFor("夫")) + "/" + Math.round(pensionAnnualFor("妻")); if (sig !== _penSig) { _penSig = sig; if ((settings.fireAdj || {}).on) runFire(); } } catch(e) {}
+  };
   var _rfAdj = runFire; runFire = function(){ try { loadFireAdjUI(); } catch(e) {} _rfAdj.apply(this, arguments); };
   // --- 変更履歴から元に戻す ---
   document.addEventListener("click", function(ev){
@@ -5116,11 +5160,13 @@
       n.push(who + "（" + a + "歳）：20歳〜60歳の国民年金" + kiso + "ヶ月、22歳〜60歳の厚生年金" + kou + "ヶ月で計算");
     } else n.push("プロフィールに" + who + "の生年月日を入れると、加入月数が自動で入ります（いまは手入力の値）");
     ["penKisoMonths","penKouseiMonths"].forEach(function(i){ document.getElementById(i).readOnly = (a !== null && a >= 0); });
-    var inc = annualIncomeOf(who);
-    if (inc > 0) { document.getElementById("penAvgIncome").value = inc; document.getElementById("penAvgIncome").readOnly = true; n.push("平均年収：直近の" + who + "の収入から年換算で " + yen(inc)); }
+    var net0 = annualIncomeOf(who), inc = penGrossOf(net0), isNet = settings.penNet !== false;
+    var pn = document.getElementById("penNet"); if (pn) pn.checked = isNet;
+    if (inc > 0) { document.getElementById("penAvgIncome").value = inc; document.getElementById("penAvgIncome").readOnly = true; n.push("平均年収：直近の" + who + "の収入から年換算で " + yen(net0) + (isNet ? "（手取り）→ 額面に換算して " + yen(inc) : "")); }
     else { document.getElementById("penAvgIncome").readOnly = false; n.push("収入の記録（誰の分＝" + who + "）がないため、平均年収は手入力の値です"); }
     info.innerHTML = n.join("<br>");
   }
+  document.getElementById("penNet").addEventListener("change", function(){ updateFireSettings({ penNet: this.checked }); runPension(); try { runWidowPension(); } catch(e) {} });
   document.getElementById("penAuto").addEventListener("change", function(){ updateFireSettings({ penAuto: this.checked }); runPension(); try { runWidowPension(); } catch(e) {} });
   document.getElementById("penWho").addEventListener("change", function(){ updateFireSettings({ penWho: this.value }); penExLoad(); runPension(); });
   var _runPensionBase = runPension;
