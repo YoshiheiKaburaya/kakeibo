@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793429604">
+<meta name="app-build" content="1793486679">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -729,6 +729,9 @@
           <label class="field"><span>想定利回り（年率 %）</span><input type="number" id="simRate" value="5" step="0.1"></label>
           <label class="field"><span>積立期間（年）</span><input type="number" id="simYears" value="20"></label>
         </div>
+        <label class="field" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="simReal"><span style="margin:0;">インフレを引いた実質利回りで計算する</span></label>
+        <div id="simInflBox" style="display:none;"><label class="field"><span>想定インフレ率（年率 %・FIREと共通）</span><input type="number" id="simInfl" value="2" step="0.1"></label></div>
+        <p class="stat-sub" id="simRealNote" style="margin:-4px 0 8px;"></p>
         <button class="primary" id="simRun">試算する</button>
       </div>
 
@@ -736,7 +739,7 @@
         <h3>試算結果</h3>
         <div class="result-line"><span>元本合計</span><span class="rl-v" id="simPrincipal">¥0</span></div>
         <div class="result-line"><span>運用益</span><span class="rl-v" id="simGain">¥0</span></div>
-        <div class="result-line total"><span>将来の資産額</span><span class="rl-v" id="simTotal">¥0</span></div>
+        <div class="result-line total"><span id="simTotalLabel">将来の資産額</span><span class="rl-v" id="simTotal">¥0</span></div>
       </div>
 
       <div class="card"><h3>資産の増え方</h3><div class="chart-box h200"><canvas id="chartInvest"></canvas></div></div>
@@ -1395,6 +1398,7 @@
         lp: settings.lp || {},
         fireAdj: settings.fireAdj || {},
         fireInfl: settings.fireInfl === undefined ? 2 : settings.fireInfl,
+        simReal: settings.simReal === true,
         wpAuto: settings.wpAuto !== false,
         penEx: settings.penEx || {},
         insLivRatio: settings.insLivRatio || 70,
@@ -1574,6 +1578,7 @@
           if (s && s.lp && typeof s.lp === "object") settings.lp = s.lp;
           if (s && s.fireAdj && typeof s.fireAdj === "object") settings.fireAdj = s.fireAdj;
           if (s && typeof s.fireInfl === "number") settings.fireInfl = s.fireInfl;
+          if (s && typeof s.simReal === "boolean") settings.simReal = s.simReal;
           if (s && typeof s.wpAuto === "boolean") settings.wpAuto = s.wpAuto;
           if (s && s.penEx && typeof s.penEx === "object") settings.penEx = s.penEx;
           if (s && typeof s.insLivRatio === "number") settings.insLivRatio = s.insLivRatio;
@@ -3133,7 +3138,7 @@
   });
 
   function futureValueCalc(initial, monthly, ratePct, years){
-    var monthlyRate = ratePct/100/12;
+    var monthlyRate = simRealRate(ratePct)/100/12;
     var months = Math.round(years*12);
     var balance = initial;
     for (var m=1; m<=months; m++){ balance = balance*(1+monthlyRate) + monthly; }
@@ -3197,7 +3202,7 @@
     var monthly = Number(document.getElementById("simMonthly").value) || 0;
     var rate = Number(document.getElementById("simRate").value) || 0;
     var years = Number(document.getElementById("simYears").value) || 0;
-    var monthlyRate = rate / 100 / 12;
+    var monthlyRate = simRealRate(rate) / 100 / 12;
     var months = Math.round(years * 12);
     var balance = initial, principal = initial;
     var series = [balance], labels = ["0"];
@@ -4810,6 +4815,26 @@
       rd.readAsText(file); ev.target.value = "";
     });
   })();
+
+  // ===== v51: 資産シミュレーションにも「インフレを引いた実質利回り」を選べる =====
+  function simInflPct(){ return settings.fireInfl === undefined ? 2 : (Number(settings.fireInfl) || 0); }
+  function simRealRate(r){ return settings.simReal === true ? (((1 + r / 100) / (1 + simInflPct() / 100) - 1) * 100) : r; }
+  function loadSimRealUI(){
+    var on = document.getElementById("simReal"); if (!on) return;
+    on.checked = settings.simReal === true;
+    var inp = document.getElementById("simInfl"); if (inp && document.activeElement !== inp) inp.value = simInflPct();
+    var box = document.getElementById("simInflBox"); if (box) box.style.display = on.checked ? "" : "none";
+    var nt = document.getElementById("simRealNote");
+    if (nt) nt.textContent = on.checked ? "利回りからインフレ（" + simInflPct() + "%）を引いた実質の利回りで計算します。金額は「今のお金の価値」です（FIREの画面と同じ前提）。" : "インフレは考えず、入れた利回りのまま計算します。金額は将来の額面です。";
+    var tl = document.getElementById("simTotalLabel"); if (tl) tl.textContent = on.checked ? "将来の資産額（今のお金の価値）" : "将来の資産額";
+  }
+  document.getElementById("simReal").addEventListener("change", function(){ updateFireSettings({ simReal: this.checked }); loadSimRealUI(); runInvestSim(); renderPerAssetSim(); });
+  document.getElementById("simInfl").addEventListener("input", function(){
+    var v = Number(this.value) || 0; updateFireSettings({ fireInfl: v });
+    var fi = document.getElementById("fireInfl"); if (fi) { fi.value = v; fi.dataset.l = "1"; }
+    runInvestSim(); renderPerAssetSim(); try { runFire(); } catch(e) {}
+  });
+  var _risR = runInvestSim; runInvestSim = function(){ try { loadSimRealUI(); } catch(e) {} _risR.apply(this, arguments); };
   // ===== v44: 「年金」の計算結果をFIREに自動連携 =====
   function pensionAnnualFor(who){
     var g = function(id){ return Number((document.getElementById(id) || {}).value) || 0; };
