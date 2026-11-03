@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793657111">
+<meta name="app-build" content="1793697201">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -184,7 +184,10 @@
   .kp-quads .kp-pill { font-size:12px; padding:8px 4px; white-space:nowrap; }
   .kp-amtbox { position:sticky; bottom:0; background:var(--card,#fff); border-top:2px solid var(--line); margin:8px -4px 6px; padding:4px 8px 2px; z-index:3; border-radius:14px; }
   .goal-row { margin:12px 0; }
-  .bd-grid { display:grid; grid-template-columns: 1fr 120px; gap:6px 10px; align-items:center; }
+  .bd-grid { display:grid; grid-template-columns: auto 1fr; gap:8px 10px; align-items:center; }
+  .bd-grid > span { white-space:nowrap; }
+  .bd-grid > div { justify-content:flex-end; min-width:0; }
+  .bd-grid input[type=text] { flex:1 1 130px; min-width:130px; text-align:right; font-size:16px; font-variant-numeric:tabular-nums; }
   .bd-grid input { width:100%; }
   .scope-bar { display: flex; gap: 6px; margin-bottom: 14px; }
   .scope-bar button { flex: 1; background: var(--card); border: 2px solid var(--line); color: var(--sub); font-family: var(--font-display); font-weight: 700; font-size: 13px; padding: 9px 2px; border-radius: 999px; cursor: pointer; white-space: nowrap; min-width: 0; }
@@ -509,6 +512,11 @@
         <label class="field"><span>1か月の予算の合計（円・空欄＝設定しない）</span><input type="text" id="budTotal" data-comma="1" inputmode="numeric" placeholder="例）250,000" autocomplete="off"></label>
         <p class="stat-sub" style="margin:4px 0;">カテゴリごとの予算（任意）。「予算外」にチェックを入れたカテゴリ（旅行・帰省など）は、予算に数えません。</p>
         <div class="bd-grid" id="budCats"></div>
+        <div id="budCalcWrap" style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border,#ccc);">
+          <h3 style="font-size:15px;margin:0 0 6px;">🧮 いくらまで使える？（自動計算）</h3>
+          <label class="field"><span>毎月貯めたい額（円）</span><input type="text" id="budSave" data-comma="1" inputmode="numeric" placeholder="例）50,000" autocomplete="off"></label>
+          <div id="budCalc"></div>
+        </div>
       </div>
 
       <div class="card" data-lgsub-pane="list" style="display:none !important;"><h3>最近の記録（タップして編集）</h3><div id="ledgerList"><p class="empty">まだ記録がありません</p></div></div>
@@ -1425,6 +1433,7 @@
         settled: settings.settled || {},
         birth: settings.birth || {},
         budgets: settings.budgets || {},
+        budSave: settings.budSave || {},
         goals: settings.goals || [],
         insLivAuto: settings.insLivAuto !== false,
         penAuto: settings.penAuto !== false,
@@ -1604,7 +1613,9 @@
           if (s && typeof s.insScope === "string") settings.insScope = s.insScope;
           settings.settled = (s && s.settled) ? clone(s.settled) : {};
           settings.birth = (s && s.birth) ? clone(s.birth) : {};
-          settings.budgets = (s && s.budgets) ? clone(s.budgets) : {};
+          settings.budgets = (s && s.budgets) ? clone(s.budgets) : (settings.budgets && budHasAny(settings.budgets) ? settings.budgets : {});
+          if (!budHasAny(settings.budgets)) { var bk = budBackupGet(); if (bk && budHasAny(bk)) { settings.budgets = bk; setTimeout(function(){ try { persistSettings(); } catch(e){} }, 800); } }
+          settings.budSave = (s && s.budSave && typeof s.budSave === "object") ? clone(s.budSave) : (settings.budSave || {});
           settings.goals = (s && Array.isArray(s.goals)) ? clone(s.goals) : [];
           if (s && typeof s.insLivAuto === "boolean") settings.insLivAuto = s.insLivAuto;
           if (s && typeof s.penAuto === "boolean") settings.penAuto = s.penAuto;
@@ -5126,7 +5137,9 @@
   // ---- 予算 ----
   var budScope = null;
   function budgetOf(sc){ return ((settings.budgets || {})[sc]) || { total: 0, cats: {} }; }
-  function setBudget(sc, b){ settings.budgets = Object.assign({}, settings.budgets); settings.budgets[sc] = b; persistSettings(); }
+  function budHasAny(bs){ return !!bs && Object.keys(bs).some(function(k){ var b = bs[k] || {}; return Number(b.total) > 0 || Object.keys(b.cats || {}).length > 0; }); }
+  function budBackupGet(){ try { return JSON.parse(localStorage.getItem("kakeibo_budgets_bak") || "null"); } catch(e){ return null; } }
+  function setBudget(sc, b){ settings.budgets = Object.assign({}, settings.budgets); settings.budgets[sc] = b; try { localStorage.setItem("kakeibo_budgets_bak", JSON.stringify(settings.budgets)); } catch(e){} persistSettings(); try { renderBudCalc(); } catch(e){} }
   function renderBudgetEditor(){
     var bar = document.getElementById("budScopeBar"); if (!bar) return;
     if (!budScope || !canEditOwn(budScope)) budScope = canEditOwn(myRole()) ? "家族" : "家族";
@@ -5137,7 +5150,7 @@
     if (document.activeElement && host.contains(document.activeElement)) return;
     host.innerHTML = cats.map(function(c){
       var ex = !!c.special, v = b.cats && b.cats[c.name] ? Number(b.cats[c.name]).toLocaleString("en-US") : "";
-      return '<span>'+c.name+'</span><div style="display:flex;align-items:center;gap:8px;"><label style="display:flex;align-items:center;gap:3px;margin:0;font-size:11px;white-space:nowrap;"><input type="checkbox" class="bud-ex" data-bc="'+c.name+'"'+(ex?' checked':'')+' style="width:auto;margin:0;">予算外</label><input type="text" data-comma="1" inputmode="numeric" autocomplete="off" data-bc="'+c.name+'" value="'+(ex ? "" : v)+'" placeholder="'+(ex ? "予算外" : "なし")+'"'+(ex ? ' disabled' : '')+' style="min-width:0;"></div>';
+      return '<span>'+c.name+'</span><div style="display:flex;align-items:center;gap:8px;"><label style="display:flex;align-items:center;gap:3px;margin:0;font-size:11px;white-space:nowrap;"><input type="checkbox" class="bud-ex" data-bc="'+c.name+'"'+(ex?' checked':'')+' style="width:auto;margin:0;">予算外</label><input type="text" data-comma="1" inputmode="numeric" autocomplete="off" data-bc="'+c.name+'" value="'+v+'" placeholder="'+(ex ? "予算外" : "なし")+'"'+(ex ? ' disabled style="opacity:.45;"' : '')+'></div>';
     }).join("");
     host.querySelectorAll("input[type=text]").forEach(function(inp){
       inp.addEventListener("input", function(){ budComma(inp); });
@@ -5167,6 +5180,65 @@
   document.querySelectorAll("#budScopeBar button").forEach(function(btn){ btn.addEventListener("click", function(){ if (btn.disabled) return; budScope = btn.dataset.bs; renderBudgetEditor(); }); });
   document.getElementById("budTotal").addEventListener("input", function(){ budComma(this); });
   document.getElementById("budTotal").addEventListener("change", function(){ var cur = clone(budgetOf(budScope)); cur.total = budNum(this.value); setBudget(budScope, cur); renderHome(); });
+
+  // ---- 予算の自動計算 ----
+  function monthlyIncomeOf(who){
+    var base = baseOf()[who] || 0; if (base > 0) return { v: base, src: "基本給の設定" };
+    var rows = data.ledger.filter(function(e){ return e.type === "income" && e.date && ownerOf(e) === who && (e._hidden || /給|賞与|ボーナス/.test(e.category || "")); });
+    var since = new Date(Date.now() - 365*86400000).toISOString().slice(0,10);
+    rows = rows.filter(function(e){ return e.date >= since; });
+    if (!rows.length) return { v: 0, src: "" };
+    var first = rows.reduce(function(m,e){ return e.date < m ? e.date : m; }, rows[0].date);
+    var nw = new Date(), fd = new Date(first), months = Math.max(1, Math.min(12, (nw.getFullYear() - fd.getFullYear()) * 12 + nw.getMonth() - fd.getMonth() + 1));
+    return { v: Math.round(rows.reduce(function(s,e){ return s + Number(e.amount||0); }, 0) / months), src: "直近の給料・ボーナスの月平均" };
+  }
+  function monthlyFixed(sc, type){
+    return (data.fixedCosts || []).filter(function(f){ return f.type === type && (f.owner || "家族") === sc && !f._hidden; }).reduce(function(s,f){ var a = Number(f.amount||0); return s + ((f.frequency || "毎月") === "毎月" ? a : a / 12); }, 0);
+  }
+  function renderBudCalc(){
+    var host = document.getElementById("budCalc"); if (!host) return;
+    var sc = budScope || "家族", y = function(n){ return "¥" + Math.round(n).toLocaleString("en-US"); };
+    var save = Number(((settings.budSave || {})[sc]) || 0);
+    var inc, incTxt, inv, lines = [], note = "";
+    var sh = Number(settings.splitHusband == null ? 50 : settings.splitHusband), famB = budgetOf("家族").total || 0;
+    if (sc === "家族") {
+      var a = monthlyIncomeOf("夫"), b = monthlyIncomeOf("妻");
+      inc = a.v + b.v + 0; incTxt = "夫婦の毎月の収入（夫 " + y(a.v) + " ＋ 妻 " + y(b.v) + "）";
+      inv = monthlyFixed("家族","invest") + monthlyFixed("夫","invest") + monthlyFixed("妻","invest");
+      var pers = (budgetOf("夫").total || 0) + (budgetOf("妻").total || 0);
+      lines = [[incTxt, inc], ["毎月の積立（固定費の投資）", -inv], ["毎月貯めたい額", -save], ["夫・妻の個人予算の合計", -pers]];
+      if (!a.v && !b.v) note = "収入が見つかりません。設定の「基本給」か、給料の収入記録を入れると計算できます。";
+    } else {
+      var me = monthlyIncomeOf(sc); inc = me.v; inv = monthlyFixed(sc,"invest");
+      var share = sc === "夫" ? sh : 100 - sh, famShare = famB * share / 100;
+      lines = [[sc + "の毎月の収入", inc], ["毎月の積立（固定費の投資）", -inv], ["毎月貯めたい額", -save], ["家族予算の" + share + "%（分担）", -famShare]];
+      if (!inc) note = "収入が見つかりません。設定の「基本給」か、給料の収入記録を入れると計算できます。";
+    }
+    lines.forEach(function(l){ l[1] = l[1] || 0; }); var avail = lines.reduce(function(s,l){ return s + l[1]; }, 0), fixedExp = monthlyFixed(sc, "expense");
+    var h = '<div style="font-size:13px;">' + lines.map(function(l){ return '<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0;"><span>' + l[0] + '</span><span>' + (l[1] < 0 ? "−" + y(-l[1]) : y(l[1])) + '</span></div>'; }).join("") + '</div>';
+    h += '<div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border,#ddd);"><span>使える予算の目安</span><span>' + (avail > 0 ? y(avail) : "¥0") + '</span></div>';
+    if (fixedExp > 0 && avail > 0) h += '<p class="stat-sub" style="margin:6px 0 0;">うち毎月の固定費 ' + y(fixedExp) + '（予算に含まれます）→ 固定費を引いた自由に使える額は ' + y(Math.max(0, avail - fixedExp)) + '</p>';
+    if (avail <= 0 && !note) note = "貯めたい額・積立が収入を上回っています。貯めたい額を見直してください。";
+    if (note) h += '<p class="stat-sub" style="margin:6px 0 0;color:#c0392b;">' + note + '</p>';
+    if (avail > 0) h += '<button type="button" class="btn" id="budApply" style="margin-top:8px;">この金額を予算にする（' + y(Math.floor(avail / 1000) * 1000) + '）</button>';
+    h += '<p class="stat-sub" style="margin:6px 0 0;">※ 収入から積立・貯めたい額を引いた目安です。税金・社会保険は手取りで入れている前提です。</p>';
+    host.innerHTML = h;
+    var ab = document.getElementById("budApply");
+    if (ab) ab.addEventListener("click", function(){
+      if (!canEditOwn(sc)) { denyToast(); return; }
+      var cur = clone(budgetOf(sc)); cur.total = Math.floor(avail / 1000) * 1000; setBudget(sc, cur);
+      var t = document.getElementById("budTotal"); if (t) t.value = Number(cur.total).toLocaleString("en-US");
+      renderHome(); showToast("予算の合計を " + y(cur.total) + " にしました");
+    });
+    var bi = document.getElementById("budSave"); if (bi && document.activeElement !== bi) bi.value = save ? save.toLocaleString("en-US") : "";
+  }
+  (function(){
+    var bi = document.getElementById("budSave"); if (!bi) return;
+    bi.addEventListener("input", function(){ budComma(bi); });
+    bi.addEventListener("change", function(){ settings.budSave = Object.assign({}, settings.budSave); settings.budSave[budScope || "家族"] = budNum(bi.value); persistSettings(); renderBudCalc(); });
+  })();
+  var _rbe = renderBudgetEditor;
+  renderBudgetEditor = function(){ try { _rbe.apply(this, arguments); } finally { try { renderBudCalc(); } catch(e){} } };
 
   // ---- ホーム（今月の状況） ----
   function specialNames(sc){
