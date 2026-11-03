@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793486679">
+<meta name="app-build" content="1793657111">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -506,8 +506,8 @@
         <h3>💰 月の予算</h3>
         <p class="stat-sub" style="margin-bottom:8px;">家族の分と自分の分の予算を決められます。超えそうなときは、家計簿のトップで知らせます。</p>
         <div class="scope-bar" id="budScopeBar"><button data-bs="家族">家族</button><button data-bs="夫">夫</button><button data-bs="妻">妻</button></div>
-        <label class="field"><span>1か月の予算の合計（円・空欄＝設定しない）</span><input type="number" id="budTotal" inputmode="numeric" placeholder="例）250000"></label>
-        <p class="stat-sub" style="margin:4px 0;">カテゴリごとの予算（任意）</p>
+        <label class="field"><span>1か月の予算の合計（円・空欄＝設定しない）</span><input type="text" id="budTotal" data-comma="1" inputmode="numeric" placeholder="例）250,000" autocomplete="off"></label>
+        <p class="stat-sub" style="margin:4px 0;">カテゴリごとの予算（任意）。「予算外」にチェックを入れたカテゴリ（旅行・帰省など）は、予算に数えません。</p>
         <div class="bd-grid" id="budCats"></div>
       </div>
 
@@ -1155,10 +1155,49 @@
     var el = ev.target;
     if (el && el.tagName === "INPUT" && (el.getAttribute("inputmode") === "numeric" || el.getAttribute("inputmode") === "decimal")) {
       var converted = toHalfWidth(el.value);
-      if (el.type === "text") converted = converted.replace(/[,，、\s¥￥円]/g, "");
+      if (el.type === "text" && !el.hasAttribute("data-comma") && !el.hasAttribute("data-cm")) converted = converted.replace(/[,，、\s¥￥円]/g, "");
       if (converted !== el.value) el.value = converted;
     }
   });
+
+  // ===== v53: 金額の入力欄をすべて「1,234,567」の形で表示（中身の値はカンマなしの数字のまま） =====
+  (function(){
+    var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    function fmt(v){
+      v = String(v == null ? "" : v);
+      var m = /^(-?)(\d+)(\.\d*)?$/.exec(v.replace(/,/g, ""));
+      if (!m) return v;
+      return m[1] + m[2].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (m[3] || "");
+    }
+    function commaize(el){
+      if (!el || el.tagName !== "INPUT" || el.__cz) return;
+      if (el.getAttribute("inputmode") !== "numeric") return;
+      var t = el.getAttribute("type"); if (t && t !== "number" && t !== "text") return;
+      if (el.closest && el.closest("[data-nocomma]")) return;
+      el.__cz = true; el.setAttribute("type", "text"); el.setAttribute("data-comma", "1");
+      var cur = desc.get.call(el);
+      Object.defineProperty(el, "value", {
+        configurable: true,
+        get: function(){ return String(desc.get.call(this)).replace(/,/g, ""); },
+        set: function(v){ desc.set.call(this, fmt(v)); }
+      });
+      desc.set.call(el, fmt(cur));
+      el.addEventListener("input", function(){
+        var raw = String(desc.get.call(el)), pos = el.selectionStart, digitsBefore = raw.slice(0, pos == null ? raw.length : pos).replace(/[^\d.-]/g, "").length;
+        var f = fmt(raw.replace(/[，、\s¥￥円]/g, ""));
+        if (f !== raw) {
+          desc.set.call(el, f);
+          var n = 0, np = f.length;
+          for (var i = 0; i < f.length; i++) { if (/[\d.-]/.test(f[i])) n++; if (n >= digitsBefore) { np = i + 1; break; } }
+          if (digitsBefore === 0) np = 0;
+          try { el.setSelectionRange(np, np); } catch(e) {}
+        }
+      });
+    }
+    function scan(root){ if (root.nodeType !== 1) return; if (root.tagName === "INPUT") commaize(root); root.querySelectorAll && root.querySelectorAll('input[inputmode="numeric"]').forEach(commaize); }
+    scan(document.body);
+    new MutationObserver(function(ms){ ms.forEach(function(m){ m.addedNodes.forEach(scan); }); }).observe(document.body, { childList: true, subtree: true });
+  })();
   var ymd = function(d){ return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()); };
   var ym = function(d){ return d.getFullYear() + "-" + pad2(d.getMonth()+1); };
   var todayStr = function(){ return ymd(new Date()); };
@@ -4835,6 +4874,48 @@
     runInvestSim(); renderPerAssetSim(); try { runFire(); } catch(e) {}
   });
   var _risR = runInvestSim; runInvestSim = function(){ try { loadSimRealUI(); } catch(e) {} _risR.apply(this, arguments); };
+
+  // ===== v53: すべての金額欄にカンマ（表示だけ。読み出す値は数字のまま） =====
+  (function(){
+    var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    if (!desc || !desc.get || !desc.set) return;
+    var fmt = function(v){
+      var s = String(v == null ? "" : v).replace(/,/g, "");
+      if (!/^-?\d*\.?\d*$/.test(s) || s === "" || s === "-" || s === ".") return s;
+      var neg = s.charAt(0) === "-"; if (neg) s = s.slice(1);
+      var p = s.split("."), ip = p[0].replace(/^0+(?=\d)/, "");
+      ip = ip.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return (neg ? "-" : "") + ip + (p.length > 1 ? "." + p[1] : "");
+    };
+    var init = function(el){
+      if (el._cm || el.hasAttribute("data-comma") || el.type === "date" || el.type === "checkbox") return;
+      var im = el.getAttribute("inputmode"), isNum = el.type === "number" || im === "numeric" || im === "decimal";
+      if (!isNum) return;
+      var decimal = im === "decimal" || /\./.test(el.getAttribute("step") || "");
+      el._cm = 1; el.setAttribute("data-cm", "1");
+      if (el.type === "number") { el.removeAttribute("min"); el.removeAttribute("max"); el.setAttribute("type", "text"); }
+      el.setAttribute("inputmode", decimal ? "decimal" : "numeric"); el.setAttribute("autocomplete", "off");
+      Object.defineProperty(el, "value", { configurable: true,
+        get: function(){ return String(desc.get.call(el)).replace(/,/g, ""); },
+        set: function(v){ desc.set.call(el, fmt(v)); } });
+      desc.set.call(el, fmt(desc.get.call(el)));
+    };
+    var scan = function(root){
+      if (!root || root.nodeType !== 1) return;
+      if (root.tagName === "INPUT") init(root);
+      if (root.querySelectorAll) { var l = root.querySelectorAll("input"); for (var i = 0; i < l.length; i++) init(l[i]); }
+    };
+    scan(document.body);
+    new MutationObserver(function(ms){ ms.forEach(function(m){ for (var i = 0; i < m.addedNodes.length; i++) scan(m.addedNodes[i]); }); }).observe(document.body, { childList: true, subtree: true });
+    document.addEventListener("input", function(ev){
+      var el = ev.target; if (!el || !el._cm) return;
+      var raw = String(desc.get.call(el)), pos = el.selectionStart, before = pos == null ? null : raw.slice(0, pos).replace(/[^\d.\-]/g, "").length;
+      var out = fmt(raw.replace(/[^\d.\-]/g, ""));
+      if (out === raw) return;
+      desc.set.call(el, out);
+      if (before !== null) { var n = 0, np = out.length; for (var k = 0; k < out.length; k++) { if (n === before) { np = k; break; } if (/[\d.\-]/.test(out.charAt(k))) n++; } try { el.setSelectionRange(np, np); } catch(e) {} }
+    });
+  })();
   // ===== v44: 「年金」の計算結果をFIREに自動連携 =====
   function pensionAnnualFor(who){
     var g = function(id){ return Number((document.getElementById(id) || {}).value) || 0; };
@@ -5051,31 +5132,55 @@
     if (!budScope || !canEditOwn(budScope)) budScope = canEditOwn(myRole()) ? "家族" : "家族";
     bar.querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.bs === budScope); b.disabled = !canEditOwn(b.dataset.bs); b.style.opacity = b.disabled ? .45 : 1; });
     var b = budgetOf(budScope);
-    var t = document.getElementById("budTotal"); if (document.activeElement !== t) t.value = b.total || "";
+    var t = document.getElementById("budTotal"); if (document.activeElement !== t) t.value = b.total ? Number(b.total).toLocaleString("en-US") : "";
     var cats = catsFor("expense", budScope), host = document.getElementById("budCats");
     if (document.activeElement && host.contains(document.activeElement)) return;
-    host.innerHTML = cats.map(function(c){ return '<span>'+c.name+'</span><input type="number" inputmode="numeric" data-bc="'+c.name+'" value="'+(b.cats && b.cats[c.name] ? b.cats[c.name] : "")+'" placeholder="なし">'; }).join("");
-    host.querySelectorAll("input").forEach(function(inp){ inp.addEventListener("change", function(){
-      var cur = clone(budgetOf(budScope)); cur.cats = cur.cats || {};
-      var v = Number(inp.value) || 0; if (v > 0) cur.cats[inp.dataset.bc] = v; else delete cur.cats[inp.dataset.bc];
-      setBudget(budScope, cur); renderHome();
-    }); });
+    host.innerHTML = cats.map(function(c){
+      var ex = !!c.special, v = b.cats && b.cats[c.name] ? Number(b.cats[c.name]).toLocaleString("en-US") : "";
+      return '<span>'+c.name+'</span><div style="display:flex;align-items:center;gap:8px;"><label style="display:flex;align-items:center;gap:3px;margin:0;font-size:11px;white-space:nowrap;"><input type="checkbox" class="bud-ex" data-bc="'+c.name+'"'+(ex?' checked':'')+' style="width:auto;margin:0;">予算外</label><input type="text" data-comma="1" inputmode="numeric" autocomplete="off" data-bc="'+c.name+'" value="'+(ex ? "" : v)+'" placeholder="'+(ex ? "予算外" : "なし")+'"'+(ex ? ' disabled' : '')+' style="min-width:0;"></div>';
+    }).join("");
+    host.querySelectorAll("input[type=text]").forEach(function(inp){
+      inp.addEventListener("input", function(){ budComma(inp); });
+      inp.addEventListener("change", function(){
+        var cur = clone(budgetOf(budScope)); cur.cats = cur.cats || {};
+        var v = budNum(inp.value); if (v > 0) cur.cats[inp.dataset.bc] = v; else delete cur.cats[inp.dataset.bc];
+        setBudget(budScope, cur); renderHome();
+      });
+    });
+    host.querySelectorAll(".bud-ex").forEach(function(cb){ cb.addEventListener("change", function(){ setCatSpecial(budScope, cb.dataset.bc, cb.checked); }); });
+  }
+  function budNum(v){ return Number(String(v || "").replace(/[^\d]/g, "")) || 0; }
+  function budComma(inp){ var d = String(inp.value || "").replace(/[^\d]/g, ""); inp.value = d ? Number(d).toLocaleString("en-US") : ""; }
+  function setCatSpecial(scope, name, on){
+    if (!canEditOwn(scope)) { denyToast(); return; }
+    settings.expenseCats = clone(settings.expenseCats); settings.incomeCats = clone(settings.incomeCats); settings.catsBy = clone(settings.catsBy || {});
+    settings.catsBy.expense = settings.catsBy.expense || {};
+    var by = settings.catsBy.expense;
+    if (!Array.isArray(by[scope])) by[scope] = settings.expenseCats.map(function(c){ var n = clone(c); n.subs = subsFor(c, scope).slice(); delete n.subsBy; return n; });
+    var c = by[scope].find(function(x){ return x.name === name; }); if (!c) return;
+    if (on) c.special = true; else delete c.special;
+    updateCategorySettings();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    renderBudgetEditor(); renderHome(); try { renderKeypad(); renderCategorySettings(); } catch(e) {}
+    showToast(on ? name + "を予算外にしました" : name + "を予算に戻しました");
   }
   document.querySelectorAll("#budScopeBar button").forEach(function(btn){ btn.addEventListener("click", function(){ if (btn.disabled) return; budScope = btn.dataset.bs; renderBudgetEditor(); }); });
-  document.getElementById("budTotal").addEventListener("change", function(){ var cur = clone(budgetOf(budScope)); cur.total = Number(this.value) || 0; setBudget(budScope, cur); renderHome(); });
+  document.getElementById("budTotal").addEventListener("input", function(){ budComma(this); });
+  document.getElementById("budTotal").addEventListener("change", function(){ var cur = clone(budgetOf(budScope)); cur.total = budNum(this.value); setBudget(budScope, cur); renderHome(); });
 
   // ---- ホーム（今月の状況） ----
-  function specialNames(){
+  function specialNames(sc){
     var m = {}, add = function(l){ (l||[]).forEach(function(c){ if (c && c.special) m[c.name] = 1; }); };
+    if (sc) { add(catsFor("expense", sc)); return m; }
     add(settings.expenseCats); var by = settings.catsBy && settings.catsBy.expense; if (by) Object.keys(by).forEach(function(k){ add(by[k]); });
     return m;
   }
   function spentFor(sc, mk){
-    var SP = specialNames();
+    var SP = specialNames(sc);
     return monthEntries(mk).filter(function(e){ return e.type === "expense" && ownerOf(e) === sc && !SP[e.category]; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
   }
   function catSpentFor(sc, mk){
-    var m = {}, SP = specialNames(); monthEntries(mk).forEach(function(e){ if (e.type === "expense" && ownerOf(e) === sc && !SP[e.category]) m[e.category] = (m[e.category]||0) + Number(e.amount||0); }); return m;
+    var m = {}, SP = specialNames(sc); monthEntries(mk).forEach(function(e){ if (e.type === "expense" && ownerOf(e) === sc && !SP[e.category]) m[e.category] = (m[e.category]||0) + Number(e.amount||0); }); return m;
   }
   function renderHome(){
     var el = document.getElementById("homeCard"); if (!el) return;
