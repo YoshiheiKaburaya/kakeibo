@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793928082">
+<meta name="app-build" content="1793976704">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -432,7 +432,7 @@
       <div id="noticeBar"></div>
       
       <p class="pane-note">「カレンダー」で支払った日を確認、「入力」で電卓のように記録、「一覧」でカテゴリごとの確認、「グラフ」で内訳、「固定費」で毎月の固定費を登録できます。</p>
-      <div class="scope-bar" id="lgSubBar"><button data-lgsub="calendar">カレンダー</button><button data-lgsub="input">入力</button><button data-lgsub="list">一覧</button><button data-lgsub="chart">グラフ</button><button data-lgsub="fixed">固定費</button></div>
+      <div class="scope-bar" id="lgSubBar"><button data-lgsub="calendar">カレンダー</button><button data-lgsub="input">入力</button><button data-lgsub="list">一覧</button><button data-lgsub="chart">グラフ</button><button data-lgsub="budget">予算</button><button data-lgsub="fixed">固定費</button></div>
       <div class="card accent-teal" data-lgsub-pane="calendar"><div id="calBody"></div></div>
       <div class="card accent-coral" data-lgsub-pane="input"><div id="kpBody"></div></div>
 
@@ -505,8 +505,9 @@
         <p class="stat-sub" style="margin-top:10px;"></p>
       </div>
 
-      <div class="card accent-sun" data-lgsub-pane="chart" id="budgetCard">
-        <h3>💰 月の予算</h3>
+      <div class="card accent-sun" data-lgsub-pane="budget" id="budDashCard"><h3 id="budDashTitle">💰 今月の予算</h3><div id="budDash"></div></div>
+      <div class="card accent-sun" data-lgsub-pane="budget" id="budgetCard">
+        <h3>⚙️ 予算を決める</h3>
         <p class="stat-sub" style="margin-bottom:8px;">家族の分と自分の分の予算を決められます。超えそうなときは、家計簿のトップで知らせます。</p>
         <div class="scope-bar" id="budScopeBar"><button data-bs="家族">家族</button><button data-bs="夫">夫</button><button data-bs="妻">妻</button></div>
         <label class="field"><span>1か月の予算の合計（円・空欄＝設定しない）</span><input type="text" id="budTotal" data-comma="1" inputmode="numeric" placeholder="例）250,000" autocomplete="off"></label>
@@ -3894,7 +3895,7 @@
 
   // ---------- 家計簿のサブ画面：カレンダー／入力／一覧／グラフ ----------
   var lgSub = "calendar";
-  try { var svSub = localStorage.getItem("kakeibo_lg_sub"); if (svSub === "calendar" || svSub === "input" || svSub === "list" || svSub === "chart" || svSub === "fixed") lgSub = svSub; } catch(e) {}
+  try { var svSub = localStorage.getItem("kakeibo_lg_sub"); if (svSub === "calendar" || svSub === "input" || svSub === "list" || svSub === "chart" || svSub === "budget" || svSub === "fixed") lgSub = svSub; } catch(e) {}
   function showLgSub(name){
     lgSub = name;
     try { localStorage.setItem("kakeibo_lg_sub", name); } catch(e) {}
@@ -3904,6 +3905,7 @@
     if (name === "input") renderKeypad();
     if (name === "fixed") { try { renderFixedCosts(); } catch(e) { console.error(e); } }
     if (name === "chart") { try { renderLedger(); } catch(e) { console.error(e); } }
+    if (name === "budget") { try { renderBudgetEditor(); renderBudDash(); } catch(e) { console.error(e); } }
   }
   document.querySelectorAll("#lgSubBar button").forEach(function(b){ b.addEventListener("click", function(){ showLgSub(b.dataset.lgsub); }); });
 
@@ -5267,6 +5269,37 @@
   var _rbe = renderBudgetEditor;
   renderBudgetEditor = function(){ try { _rbe.apply(this, arguments); } finally { try { renderBudCalc(); } catch(e){} } };
 
+  // ---- 予算タブ：今月の残り ----
+  var budDashScope = null;
+  function renderBudDash(){
+    var host = document.getElementById("budDash"); if (!host) return;
+    var now = new Date(), mk = currentMonthKey(), dim = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate(), left = dim - now.getDate() + 1;
+    document.getElementById("budDashTitle").textContent = "💰 " + (now.getMonth()+1) + "月の予算（あと" + left + "日）";
+    var scopes = ["家族", myRole()].filter(function(v,i,a){ return a.indexOf(v) === i; });
+    var h = "", any = false;
+    scopes.forEach(function(sc){
+      var b = budgetOf(sc); if (!b.total) return; any = true;
+      var sp = spentFor(sc, mk), rest = b.total - sp, pct = Math.round(sp / b.total * 100);
+      h += '<div style="margin:6px 0 14px;"><div style="font-size:13px;font-weight:700;">' + sc + 'の予算</div>'
+        + '<div style="font-size:12px;opacity:.7;">' + (rest >= 0 ? 'あと使える額' : '予算オーバー') + '</div>'
+        + '<div style="font-size:30px;font-weight:800;line-height:1.2;' + (rest < 0 ? 'color:#E8503F;' : '') + '">' + (rest < 0 ? '−' : '') + yen(Math.abs(rest)) + '</div>'
+        + '<div class="hm-bar"><div class="hm-fill ' + (pct >= 100 ? "over" : (pct >= 80 ? "warn" : "")) + '" style="width:' + Math.min(100, pct) + '%"></div></div>'
+        + '<div class="hm-sub">使った ' + yen(sp) + ' / 予算 ' + yen(b.total) + '（' + pct + '%）'
+        + (rest > 0 ? '<br>1日あたり ' + yen(Math.floor(rest / Math.max(1,left))) + ' まで' : '') + '</div>';
+      var cs = catSpentFor(sc, mk), names = Object.keys(b.cats || {});
+      if (names.length) {
+        h += '<div style="margin-top:8px;font-size:12px;">' + names.map(function(c){
+          var lim = b.cats[c], u = cs[c] || 0, r = lim - u, p = Math.round(u / lim * 100);
+          return '<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-top:1px solid rgba(128,128,128,.18);"><span>' + (p >= 100 ? "🔴 " : (p >= 80 ? "🟠 " : "")) + c + '</span><span>' + (r >= 0 ? 'あと ' + yen(r) : '超過 ' + yen(-r)) + ' <span style="opacity:.6;">（' + yen(u) + ' / ' + yen(lim) + '）</span></span></div>';
+        }).join("") + '</div>';
+      }
+      h += '</div>';
+    });
+    if (!any) h = '<p class="stat-sub">まだ予算がありません。下の「予算を決める」で合計を入れると、ここに「あといくら使えるか」が出ます。</p>';
+    host.innerHTML = h;
+  }
+  var _rhB = renderHome; renderHome = function(){ _rhB.apply(this, arguments); try { renderBudDash(); } catch(e) {} };
+
   // ---- ホーム（今月の状況） ----
   function specialNames(sc){
     var m = {}, add = function(l){ (l||[]).forEach(function(c){ if (c && c.special) m[c.name] = 1; }); };
@@ -5299,7 +5332,7 @@
       Object.keys(b.cats || {}).forEach(function(c){ var p = (cs[c]||0) / b.cats[c]; if (p >= 0.8) warn.push((p >= 1 ? "🔴 " : "🟠 ") + c + " " + Math.round(p*100) + "%"); });
       if (warn.length) h += '<div class="hm-sub" style="margin-bottom:4px;">' + warn.join("　") + '</div>';
     });
-    if (!any) h += '<div class="hm-row"><div class="hm-top"><span>今月の支出</span><span>' + yen(exp) + '</span></div><div class="hm-sub">収入 ' + yen(inc) + ' ・ 「グラフ」の「月の予算」を決めると、残りと使える額が出ます。</div></div>';
+    if (!any) h += '<div class="hm-row"><div class="hm-top"><span>今月の支出</span><span>' + yen(exp) + '</span></div><div class="hm-sub">収入 ' + yen(inc) + ' ・ 「予算」タブで予算を決めると、残りと使える額が出ます。</div></div>';
     h += '<div class="hm-row hm-sub">今日の支出：<b>' + yen(todaySum) + '</b></div>';
     el.innerHTML = h;
   }
