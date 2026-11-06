@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793976704">
+<meta name="app-build" content="1793995510">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -5168,7 +5168,7 @@
   function budgetOf(sc){ return ((settings.budgets || {})[sc]) || { total: 0, cats: {} }; }
   function budHasAny(bs){ return !!bs && Object.keys(bs).some(function(k){ var b = bs[k] || {}; return Number(b.total) > 0 || Object.keys(b.cats || {}).length > 0; }); }
   function budBackupGet(){ try { return JSON.parse(localStorage.getItem("kakeibo_budgets_bak") || "null"); } catch(e){ return null; } }
-  function setBudget(sc, b){ settings.budgets = Object.assign({}, settings.budgets); settings.budgets[sc] = b; try { localStorage.setItem("kakeibo_budgets_bak", JSON.stringify(settings.budgets)); } catch(e){} persistSettings(); try { renderBudCalc(); } catch(e){} }
+  function setBudget(sc, b){ settings.budgets = Object.assign({}, settings.budgets); settings.budgets[sc] = b; try { localStorage.setItem("kakeibo_budgets_bak", JSON.stringify(settings.budgets)); } catch(e){} persistSettings(); try { renderBudCalc(); } catch(e){} try { renderBudDash(); } catch(e){} }
   function renderBudgetEditor(){
     var bar = document.getElementById("budScopeBar"); if (!bar) return;
     if (!budScope || !canEditOwn(budScope)) budScope = canEditOwn(myRole()) ? "家族" : "家族";
@@ -5182,12 +5182,14 @@
       return '<span>'+c.name+'</span><div style="display:flex;align-items:center;gap:8px;"><label style="display:flex;align-items:center;gap:3px;margin:0;font-size:11px;white-space:nowrap;"><input type="checkbox" class="bud-ex" data-bc="'+c.name+'"'+(ex?' checked':'')+' style="width:auto;margin:0;">予算外</label><input type="text" data-comma="1" inputmode="numeric" autocomplete="off" data-bc="'+c.name+'" value="'+v+'" placeholder="'+(ex ? "予算外" : "なし")+'"'+(ex ? ' disabled style="opacity:.45;"' : '')+'></div>';
     }).join("");
     host.querySelectorAll("input[type=text]").forEach(function(inp){
-      inp.addEventListener("input", function(){ budComma(inp); });
-      inp.addEventListener("change", function(){
-        var cur = clone(budgetOf(budScope)); cur.cats = cur.cats || {};
-        var v = budNum(inp.value); if (v > 0) cur.cats[inp.dataset.bc] = v; else delete cur.cats[inp.dataset.bc];
-        setBudget(budScope, cur); renderHome();
-      });
+      var sc0 = budScope, commit = function(){
+        var cur = clone(budgetOf(sc0)); cur.cats = cur.cats || {};
+        var v = budNum(inp.value), old = Number(cur.cats[inp.dataset.bc] || 0); if (v === old) return;
+        if (v > 0) cur.cats[inp.dataset.bc] = v; else delete cur.cats[inp.dataset.bc];
+        setBudget(sc0, cur); renderHome();
+      };
+      inp.addEventListener("input", function(){ budComma(inp); clearTimeout(inp._bt); inp._bt = setTimeout(commit, 500); });
+      inp.addEventListener("change", function(){ clearTimeout(inp._bt); commit(); });
     });
     host.querySelectorAll(".bud-ex").forEach(function(cb){ cb.addEventListener("change", function(){ setCatSpecial(budScope, cb.dataset.bc, cb.checked); }); });
   }
@@ -5207,8 +5209,9 @@
     showToast(on ? name + "を予算外にしました" : name + "を予算に戻しました");
   }
   document.querySelectorAll("#budScopeBar button").forEach(function(btn){ btn.addEventListener("click", function(){ if (btn.disabled) return; budScope = btn.dataset.bs; renderBudgetEditor(); }); });
-  document.getElementById("budTotal").addEventListener("input", function(){ budComma(this); });
-  document.getElementById("budTotal").addEventListener("change", function(){ var cur = clone(budgetOf(budScope)); cur.total = budNum(this.value); setBudget(budScope, cur); renderHome(); });
+  var budTotalCommit = function(el){ var cur = clone(budgetOf(budScope)); var v = budNum(el.value); if (v === Number(cur.total || 0)) return; cur.total = v; setBudget(budScope, cur); renderHome(); };
+  document.getElementById("budTotal").addEventListener("input", function(){ budComma(this); var el = this; clearTimeout(el._bt); el._bt = setTimeout(function(){ budTotalCommit(el); }, 500); });
+  document.getElementById("budTotal").addEventListener("change", function(){ clearTimeout(this._bt); budTotalCommit(this); });
 
   // ---- 予算の自動計算 ----
   function monthlyIncomeOf(who){
@@ -5263,8 +5266,9 @@
   }
   (function(){
     var bi = document.getElementById("budSave"); if (!bi) return;
-    bi.addEventListener("input", function(){ budComma(bi); });
-    bi.addEventListener("change", function(){ settings.budSave = Object.assign({}, settings.budSave); settings.budSave[budScope || "家族"] = budNum(bi.value); persistSettings(); renderBudCalc(); });
+    var saveCommit = function(){ var sc = budScope || "家族", v = budNum(bi.value); if (v === Number((settings.budSave || {})[sc] || 0)) return; settings.budSave = Object.assign({}, settings.budSave); settings.budSave[sc] = v; persistSettings(); renderBudCalc(); };
+    bi.addEventListener("input", function(){ budComma(bi); clearTimeout(bi._bt); bi._bt = setTimeout(saveCommit, 500); });
+    bi.addEventListener("change", function(){ clearTimeout(bi._bt); saveCommit(); });
   })();
   var _rbe = renderBudgetEditor;
   renderBudgetEditor = function(){ try { _rbe.apply(this, arguments); } finally { try { renderBudCalc(); } catch(e){} } };
