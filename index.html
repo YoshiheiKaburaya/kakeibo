@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793919685">
+<meta name="app-build" content="1793928082">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -2770,7 +2770,7 @@
       listEl.innerHTML = '<p class="empty">まだ固定費が登録されていません</p>';
     } else {
       var sorted = data.fixedCosts.filter(function(f){ return canSeeSplit(f.owner || ""); }).sort(function(a,b){ return (a.day||99) - (b.day||99); });
-      var hiddenFx = data.fixedCosts.filter(function(f){ return !canSeeSplit(f.owner || ""); });
+      var hiddenFx = data.fixedCosts.filter(function(f){ return !canSeeSplit(f.owner || "") && f.type !== "invest"; }); // 相手の投資・積立は固定費の合計に入れない
       var hiddenFxTotal = hiddenFx.filter(function(f){ return (f.frequency||"毎月") === "毎月"; }).reduce(function(s,f){ return s + (f.type === "income" ? -1 : 1) * Number(f.amount||0); }, 0);
       var hiddenFxHtml = hiddenFx.length ? ('<div class="row"><div class="rname"><span class="rtitle">相手の固定費（合計のみ）</span><span class="rmeta">'+hiddenFx.length+'件・月額</span></div><span class="ramount expense">'+(hiddenFxTotal<0?'+':'−')+yen(Math.abs(hiddenFxTotal)).replace("¥","")+'</span></div>') : '';
       listEl.innerHTML = hiddenFxHtml + sorted.map(function(f){
