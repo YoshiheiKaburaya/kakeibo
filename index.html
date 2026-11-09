@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1793995510">
+<meta name="app-build" content="1794209783">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -5289,7 +5289,8 @@
         + '<div style="font-size:30px;font-weight:800;line-height:1.2;' + (rest < 0 ? 'color:#E8503F;' : '') + '">' + (rest < 0 ? '−' : '') + yen(Math.abs(rest)) + '</div>'
         + '<div class="hm-bar"><div class="hm-fill ' + (pct >= 100 ? "over" : (pct >= 80 ? "warn" : "")) + '" style="width:' + Math.min(100, pct) + '%"></div></div>'
         + '<div class="hm-sub">使った ' + yen(sp) + ' / 予算 ' + yen(b.total) + '（' + pct + '%）'
-        + (rest > 0 ? '<br>1日あたり ' + yen(Math.floor(rest / Math.max(1,left))) + ' まで' : '') + '</div>';
+        + (rest > 0 ? '<br>1日あたり ' + yen(Math.floor(rest / Math.max(1,left))) + ' まで' : '')
+        + (futureSpentFor(sc, mk) > 0 ? '<br><span style="opacity:.75;">今日より先の予定 ' + yen(futureSpentFor(sc, mk)) + ' は含めていません（日付になったら反映）</span>' : '') + '</div>';
       var cs = catSpentFor(sc, mk), names = Object.keys(b.cats || {});
       if (names.length) {
         h += '<div style="margin-top:8px;font-size:12px;">' + names.map(function(c){
@@ -5311,17 +5312,29 @@
     add(settings.expenseCats); var by = settings.catsBy && settings.catsBy.expense; if (by) Object.keys(by).forEach(function(k){ add(by[k]); });
     return m;
   }
+  // 今日より先の日付（予定）は「使った額」に入れない。今月だけが対象。
+  function isFutureEntry(e, mk){
+    if (mk !== currentMonthKey()) return false;
+    var now = new Date();
+    if (e.date) return e.date > todayStr();
+    return !!(e.fixedDay && Number(e.fixedDay) > now.getDate());
+  }
+  function untilToday(list, mk){ return list.filter(function(e){ return !isFutureEntry(e, mk); }); }
+  function futureSpentFor(sc, mk){
+    var SP = specialNames(sc);
+    return monthEntries(mk).filter(function(e){ return e.type === "expense" && ownerOf(e) === sc && !SP[e.category] && isFutureEntry(e, mk); }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+  }
   function spentFor(sc, mk){
     var SP = specialNames(sc);
-    return monthEntries(mk).filter(function(e){ return e.type === "expense" && ownerOf(e) === sc && !SP[e.category]; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+    return untilToday(monthEntries(mk), mk).filter(function(e){ return e.type === "expense" && ownerOf(e) === sc && !SP[e.category]; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
   }
   function catSpentFor(sc, mk){
-    var m = {}, SP = specialNames(sc); monthEntries(mk).forEach(function(e){ if (e.type === "expense" && ownerOf(e) === sc && !SP[e.category]) m[e.category] = (m[e.category]||0) + Number(e.amount||0); }); return m;
+    var m = {}, SP = specialNames(sc); untilToday(monthEntries(mk), mk).forEach(function(e){ if (e.type === "expense" && ownerOf(e) === sc && !SP[e.category]) m[e.category] = (m[e.category]||0) + Number(e.amount||0); }); return m;
   }
   function renderHome(){
     var el = document.getElementById("homeCard"); if (!el) return;
     var now = new Date(), mk = currentMonthKey(), dim = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate(), left = dim - now.getDate() + 1;
-    var E = monthEntries(mk), inc = 0, exp = 0;
+    var E = untilToday(monthEntries(mk), mk), inc = 0, exp = 0;
     E.forEach(function(e){ if (e.type === "income") inc += Number(e.amount||0); else if (e.type === "expense") exp += Number(e.amount||0); });
     var today = todayStr(), todaySum = data.ledger.filter(function(e){ return e.date === today && e.type === "expense"; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
     var h = '<h3>📊 ' + (now.getMonth()+1) + '月の状況</h3>';
