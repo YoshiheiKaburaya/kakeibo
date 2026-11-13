@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1794209783">
+<meta name="app-build" content="1794527997">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -815,6 +815,18 @@
         <div class="result-line"><span>＋ 一時金</span><span class="rl-v" id="insLumpOut">¥0</span></div>
         <div class="result-line"><span>− 現有資産</span><span class="rl-v" id="insAssetsOut">¥0</span></div>
         <div class="result-line total"><span>必要保障額の目安</span><span class="rl-v" id="insNeed">¥0</span></div>
+      </div>
+
+      <div class="card accent-teal" id="insWorkCard">
+        <h3>💼 残った方が働いたら？</h3>
+        <p class="stat-sub" style="margin:0 0 10px;">上の試算は「残った方が働かない」前提です。残った方が毎月いくら稼ぐと、必要保障額がどれだけ減るかを計算します。</p>
+        <label class="field"><span>残った方の月収（手取り・円）</span><input type="number" id="insWork" value="150000" inputmode="numeric"></label>
+        <div class="result-line"><span>働かない場合</span><span class="rl-v" id="insWorkNeed0">¥0</span></div>
+        <div class="result-line"><span>この月収で働いた場合</span><span class="rl-v" id="insWorkNeed1">¥0</span></div>
+        <div class="result-line total"><span>減る額</span><span class="rl-v" id="insWorkDiff">¥0</span></div>
+        <p class="stat-sub" id="insWorkBreak" style="margin:10px 0 6px;font-weight:700;"></p>
+        <div id="insWorkTable"></div>
+        <p class="stat-sub" style="margin-top:8px;">※ 働く期間は上の「保障が必要な期間」と同じにしています。遺族年金は、働いても変わらない前提です（収入が高い場合は実際には変わることがあります）。</p>
       </div>
       <p class="disclaimer">これは簡易的な目安の試算です。実際に必要な保障額は、住宅ローンの団体信用生命保険の有無、教育費、配偶者の就労状況、公的年金の見込み額などによって大きく変わります。保険の加入・見直しはファイナンシャルプランナーなど専門家にご相談ください。</p>
     </section>
@@ -1977,8 +1989,10 @@
   }
 
   function catTransactionListHtml(type, catName, cursor, own){
-    var entries = cursorEntries(cursor).filter(function(e){ return e.type===type && e.category===catName && !e.fixed && (!own || ownerOf(e) === own); });
-    entries = entries.slice().sort(function(a,b){ return (b.date||"").localeCompare(a.date||""); });
+    var entries = cursorEntries(cursor).filter(function(e){ return e.type===type && e.category===catName && (!own || ownerOf(e) === own); });
+    // まだ記録になっていない固定費（見込み）も、日付つきで一覧に出す
+    var fxKey = function(e){ return e.date || (cursor.monthKey ? cursor.monthKey + "-" + ("0" + (e.fixedDay || 0)).slice(-2) : ""); };
+    entries = entries.slice().sort(function(a,b){ return fxKey(b).localeCompare(fxKey(a)); });
     if (!entries.length) return '<p class="empty" style="padding:6px 0 2px;">この期間の記録はありません</p>';
     return '<div class="cat-tx-list">' + entries.map(function(e){
       if (e.id === tableExpandedEditId) {
@@ -1988,8 +2002,10 @@
       var wasteTag = e.wasteful ? '<span class="waste-tag">😅</span>' : '';
       var lockTag = (e._priv ? '<span class="lock-tag">🔒</span>' : '') + (e.proxy ? '<span class="lock-tag">' + (e.by || '') + 'が代理入力</span>' : '') + (e.cardId ? '<span class="lock-tag">💳' + cardName(e.cardId) + '</span>' : '');
       var accTxt = e.accountId ? " ・ 口座反映済" : "";
-      return '<div class="row'+(canEditSplit(e.split) ? ' row-clickable' : '')+' tx-row" data-id="'+e.id+'">'
-        + '<div class="rname"><span class="rtitle">'+(e.memo||e.category)+subTxt+'</span><span class="rmeta">'+e.date+accTxt+'</span></div>'
+      var isFxv = !!e.fixed;
+      if (isFxv) lockTag += '<span class="lock-tag">固定費</span>';
+      return '<div class="row'+(!isFxv && canEditSplit(e.split) ? ' row-clickable' : '')+' tx-row" data-id="'+e.id+'">'
+        + '<div class="rname"><span class="rtitle">'+(e.memo||e.category)+subTxt+'</span><span class="rmeta">'+(isFxv ? ("毎月" + (e.fixedDay ? e.fixedDay + "日" : "") + " ・ 固定費（見込み）") : e.date+accTxt)+'</span></div>'
         + wasteTag + lockTag
         + '<span class="ramount '+e.type+'">'+(e.type==="income"?"+":"−")+yen(e.amount).replace("¥","")+'</span>'
         + '</div>';
@@ -2109,7 +2125,7 @@
       });
     });
     document.querySelectorAll(".tx-row").forEach(function(r){
-      r.addEventListener("click", function(){ if (String(r.dataset.id).indexOf("hid_") === 0) { showToast("🔒 非公開分は合計だけ表示されます"); return; } tableExpandedEditId = r.dataset.id; renderCatTable(); });
+      r.addEventListener("click", function(){ if (String(r.dataset.id).indexOf("hid_") === 0) { showToast("🔒 非公開分は合計だけ表示されます"); return; } if (String(r.dataset.id).indexOf("fx_") === 0) { showToast("固定費は「固定費」タブで変更できます"); return; } tableExpandedEditId = r.dataset.id; renderCatTable(); });
     });
     if (tableExpandedEditId) {
       var txEditRow = document.querySelector('.cat-tx-list .row-editing[data-id="'+tableExpandedEditId+'"]');
@@ -3425,7 +3441,32 @@
     document.getElementById("insLumpOut").textContent = yen(lump);
     document.getElementById("insAssetsOut").textContent = "−" + yen(assets).replace("¥","");
     document.getElementById("insNeed").textContent = yen(need);
+    try { renderInsWork(living, years, pension, lump, assets); } catch(e) { console.error(e); }
   }
+  function insNeedFor(w, living, years, pension, lump, assets){
+    return Math.max(0, Math.max(0, living - pension - w) * 12 * years + lump - assets);
+  }
+  function renderInsWork(living, years, pension, lump, assets){
+    var el = document.getElementById("insWork"); if (!el) return;
+    var w = Number(el.value) || 0, n0 = insNeedFor(0, living, years, pension, lump, assets), n1 = insNeedFor(w, living, years, pension, lump, assets);
+    document.getElementById("insWorkNeed0").textContent = yen(n0);
+    document.getElementById("insWorkNeed1").textContent = yen(n1);
+    document.getElementById("insWorkDiff").textContent = (n0 - n1 > 0 ? "−" : "") + yen(n0 - n1);
+    var gapM = Math.max(0, living - pension), brk = "";
+    if (n0 <= 0) brk = "働かなくても、今の資産だけで足ります。";
+    else if (years <= 0) brk = "";
+    else {
+      var need = Math.ceil(Math.max(0, gapM - (assets - lump) / (12 * years)) / 1000) * 1000;
+      brk = need >= gapM ? "毎月 " + yen(gapM) + " 以上稼ぐと、毎月の生活費の不足がなくなります（一時金の分だけが残ります）。" : "毎月 " + yen(need) + " 以上稼げば、今の資産で足りて、必要保障額は 0 になります。";
+    }
+    document.getElementById("insWorkBreak").textContent = brk;
+    var rows = [0, 50000, 100000, 150000, 200000, 250000, 300000];
+    document.getElementById("insWorkTable").innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:13px;text-align:right;"><b style="text-align:left;">月収（手取り）</b><b>必要保障額</b>' + rows.map(function(r){
+      var hl = (r === 0) ? '' : '';
+      return '<span style="text-align:left;">' + (r === 0 ? "働かない（0円）" : yen(r)) + '</span><span>' + yen(insNeedFor(r, living, years, pension, lump, assets)) + '</span>';
+    }).join("") + '</div>';
+  }
+  (function(){ var e = document.getElementById("insWork"); if (e) { e.addEventListener("input", function(){ try { runInsurance(); } catch(x){} }); } })();
   document.getElementById("insRun").addEventListener("click", function(){ runInsurance(); });
 
   function runPension(){
