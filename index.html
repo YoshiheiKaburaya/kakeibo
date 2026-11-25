@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>家計ノート</title>
-<meta name="app-build" content="1795422793">
+<meta name="app-build" content="1795590366">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計ノート">
@@ -915,6 +915,20 @@
         <div class="result-line"><span>FIRE後の資産寿命</span><span class="rl-v" id="fireDraw">—</span></div>
         <p class="stat-sub" id="fireDrawNote" style="margin-top:4px;"></p>
       </div>
+      <div class="card accent-sun" id="sideFireCard">
+        <h3>🌿 サイドFIRE</h3>
+        <p class="stat-sub" style="margin:0 0 10px;">FIRE後も、働いて毎月いくらか稼ぐ前提で計算します。稼ぐぶん取り崩しが減るので、完全FIREより早く、少ない資産で達成できます。</p>
+        <div class="grid-2">
+          <label class="field"><span>稼ぐ月収（手取り・円）</span><input type="number" id="sideInc" value="100000" inputmode="numeric"></label>
+          <label class="field"><span>何歳まで働く</span><input type="number" id="sideUntil" value="65" inputmode="numeric"></label>
+        </div>
+        <div class="result-line"><span>サイドFIREに必要な資産額</span><span class="rl-v" id="sideTarget">¥0</span></div>
+        <div class="result-line total"><span>達成予測</span><span class="rl-v" id="sideResult">—</span></div>
+        <div class="result-line"><span>完全FIREとの違い</span><span class="rl-v" id="sideDiff">—</span></div>
+        <p class="stat-sub" id="sideNote" style="margin-top:6px;"></p>
+        <div id="sideTable" style="margin-top:10px;"></div>
+        <p class="stat-sub" style="margin-top:8px;">上の「試算する」の入力（年齢・資産・支出・利回り・追加貯蓄・年金）をそのまま使います。サイドの収入は、FIRE後から「何歳まで働く」の年齢まで入るものとして、必要な資産を計算しています（簡易計算）。</p>
+      </div>
       <div class="card" id="evCard"><h3>🎉 ライフイベント（大きな支出・収入）</h3>
         <p class="stat-sub" style="margin-bottom:8px;">子ども誕生・住宅購入・車の買い替えなど。入れた年齢で資産が増減するものとして、下のグラフと達成予測に反映します。</p>
         <div id="evList"></div>
@@ -1456,6 +1470,7 @@
         birth: settings.birth || {},
         budgets: settings.budgets || {},
         budSave: settings.budSave || {},
+        sideFire: settings.sideFire || {},
         goals: settings.goals || [],
         insLivAuto: settings.insLivAuto !== false,
         penAuto: settings.penAuto !== false,
@@ -1638,6 +1653,7 @@
           settings.budgets = (s && s.budgets) ? clone(s.budgets) : (settings.budgets && budHasAny(settings.budgets) ? settings.budgets : {});
           if (!budHasAny(settings.budgets)) { var bk = budBackupGet(); if (bk && budHasAny(bk)) { settings.budgets = bk; setTimeout(function(){ try { persistSettings(); } catch(e){} }, 800); } }
           settings.budSave = (s && s.budSave && typeof s.budSave === "object") ? clone(s.budSave) : (settings.budSave || {});
+          settings.sideFire = (s && s.sideFire && typeof s.sideFire === "object") ? clone(s.sideFire) : (settings.sideFire || {});
           settings.goals = (s && Array.isArray(s.goals)) ? clone(s.goals) : [];
           if (s && typeof s.insLivAuto === "boolean") settings.insLivAuto = s.insLivAuto;
           if (s && typeof s.penAuto === "boolean") settings.penAuto = s.penAuto;
@@ -5547,6 +5563,65 @@
     renderLedger(); renderAssets(); renderFixedCosts(); refreshHeader();
     runInvestSim(); runInsurance(); runWidowPension(); runPension(); runFireWithSync();
   }
+  // ---- サイドFIRE ----
+  function renderSideFire(){
+    if (!document.getElementById("sideFireCard")) return;
+    var sf = settings.sideFire || {};
+    var incEl = document.getElementById("sideInc"), unEl = document.getElementById("sideUntil");
+    if (incEl.dataset.l !== "1") { if (sf.inc != null) incEl.value = sf.inc; if (sf.until != null) unEl.value = sf.until; incEl.dataset.l = "1"; }
+    var age = Number(document.getElementById("fireAge").value) || 0, assets = Number(document.getElementById("fireAssets").value) || 0;
+    var spend = Number(document.getElementById("fireSpend").value) || 0, withdraw = Number(document.getElementById("fireWithdraw").value) || 4;
+    var rate = Number(document.getElementById("fireRate").value) || 0, infl = Number(document.getElementById("fireInfl").value) || 0;
+    rate = ((1 + rate/100) / (1 + infl/100) - 1) * 100;
+    var save_ = Number(document.getElementById("fireSave").value) || 0;
+    var adj = fireAdj(), spendF = adj.on ? Math.max(0, spend - adj.cut) : spend;
+    var W = Number(unEl.value) || 65, inc = (Number(incEl.value) || 0) * 12;
+    var targetAtS = function(F, side){
+      if (!(withdraw > 0)) return 0;
+      var pen = (adj.on && adj.has) ? adj.penAt : function(){ return 0; };
+      if (side <= 0) {
+        if (!adj.on || !adj.has) return spendF / (withdraw/100);
+        var last0 = Math.max(F, adj.lastStart), sum0 = 0;
+        for (var q0 = F; q0 < last0; q0++) sum0 += Math.max(0, spendF - pen(q0));
+        return sum0 + Math.max(0, spendF - pen(last0)) / (withdraw/100);
+      }
+      // 働いている間は「支出 − サイド収入」だけを取り崩し、そのあいだ運用で資産が増えるものとして、後ろの年齢から順に必要額を積み上げる
+      var last = Math.max(F, (adj.on && adj.has) ? adj.lastStart : 0, W), v = Math.max(0, spendF - pen(last)) / (withdraw/100);
+      for (var q = last - 1; q >= F; q--) v = (v + Math.max(0, spendF - pen(q) - (q < W ? side : 0))) / (1 + rate/100);
+      return Math.min(v, targetAtS(F, 0)); // サイド収入で、完全FIREより必要資産が増えることはない
+    };
+    var reach = function(side){
+      var bal = assets, yr = null;
+      if (bal >= targetAtS(age, side)) return { y: 0, t: targetAtS(age, side) };
+      for (var y = 1; y <= 60; y++){
+        bal = bal * (1 + rate/100) + save_ + lifeEventDelta(age + y);
+        if (bal >= targetAtS(age + y, side)) { yr = y; break; }
+      }
+      return { y: yr, t: targetAtS(age + (yr === null ? 0 : yr), side) };
+    };
+    var full = reach(0), me = reach(inc);
+    document.getElementById("sideTarget").textContent = yen(me.t);
+    document.getElementById("sideResult").textContent = me.y === null ? "60年以内に到達しません" : (me.y === 0 ? "もう達成しています" : (me.y + "年後（" + (age + me.y) + "歳）に到達見込み"));
+    var diffTxt = "—";
+    if (me.y !== null && full.y !== null) diffTxt = (full.y - me.y > 0 ? (full.y - me.y) + "年早い" : (full.y === me.y ? "同じ時期" : "遅い")) + "・必要資産 " + (full.t - me.t >= 0 ? "−" : "+") + yen(Math.abs(full.t - me.t));
+    else if (me.y !== null && full.y === null) diffTxt = "完全FIREは60年以内に届きません";
+    document.getElementById("sideDiff").textContent = diffTxt;
+    var sameAsFull = (inc > 0 && me.t >= full.t - 1 && W > age + (me.y || 0));
+    document.getElementById("sideNote").textContent = sameAsFull ? "このくらいの収入だと、取り崩し率の考え方では完全FIREと必要資産が変わりません（もっと稼ぐ、または長く働くと差が出ます）。" : W <= age ? "「何歳まで働く」が今の年齢以下なので、サイドの収入は入っていません。" : ((me.y !== null && age + me.y >= W && inc > 0) ? ("到達する年齢（" + (age + me.y) + "歳）が、働く年齢（" + W + "歳）以降なので、サイドの収入の効果は出ません。「何歳まで働く」を延ばすと変わります。") : "");
+    var rows = [0, 50000, 100000, 150000, 200000, 250000, 300000];
+    document.getElementById("sideTable").innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 8px;font-size:12px;text-align:right;"><b style="text-align:left;">サイドの月収</b><b>必要資産</b><b>到達</b>' + rows.map(function(r){
+      var x = reach(r * 12), hl = (r * 12 === inc) ? 'font-weight:700;color:var(--accent,#d98e00);' : '';
+      return '<span style="text-align:left;' + hl + '">' + (r === 0 ? "なし（完全FIRE）" : yen(r)) + '</span><span style="' + hl + '">' + yen(x.t) + '</span><span style="' + hl + '">' + (x.y === null ? "届かない" : (x.y === 0 ? "達成済み" : (age + x.y) + "歳")) + '</span>';
+    }).join("") + '</div>';
+  }
+  (function(){
+    var saveSF = function(){ settings.sideFire = { inc: Number(document.getElementById("sideInc").value) || 0, until: Number(document.getElementById("sideUntil").value) || 0 }; persistSettings(); };
+    ["sideInc","sideUntil"].forEach(function(id){ var e = document.getElementById(id); if (!e) return; e.addEventListener("input", function(){ try { renderSideFire(); } catch(x){ console.error(x); } }); e.addEventListener("change", function(){ saveSF(); }); });
+    ["fireRun","fireSyncBtn"].forEach(function(id){ var e = document.getElementById(id); if (e) e.addEventListener("click", function(){ setTimeout(function(){ try { renderSideFire(); } catch(x){ console.error(x); } }, 0); }); });
+    ["fireAge","fireAssets","fireSpend","fireWithdraw","fireRate","fireInfl","fireSave"].forEach(function(id){ var e = document.getElementById(id); if (e) e.addEventListener("change", function(){ try { renderSideFire(); } catch(x){} }); });
+  })();
+  var _rfSF = runFire; runFire = function(){ _rfSF.apply(this, arguments); try { renderSideFire(); } catch(e) { console.error(e); } };
+
   // ---- 資産額を隠す／表示するボタン ----
   (function(){
     var KEY = "kakeibo_hide_assets", btn = document.getElementById("hideAssetsBtn");
